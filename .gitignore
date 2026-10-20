@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+build/
+
+# env & secrets
+.env
+.env*.local
+
+# prisma generated client
+/prisma/generated
+
+# os / editor
+.DS_Store
+*.log
+.vercel

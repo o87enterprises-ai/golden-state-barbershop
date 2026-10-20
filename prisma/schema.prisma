@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  priceCents  Int
+  minutes     Int       @default(30)
+  active      Boolean   @default(true)
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+}
+
+model Barber {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  active    Boolean   @default(true)
+  bookings  Booking[]
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  service       Service       @relation(fields: [serviceId], references: [id])
+  serviceId     String
+  barber        Barber?       @relation(fields: [barberId], references: [id])
+  barberId      String?
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  customerId    String
+  startsAt      DateTime
+  endsAt        DateTime
+  status        BookingStatus @default(PENDING)
+  // Payment
+  amountCents   Int
+  stripePaymentIntentId String? @unique
+  paidAt        DateTime?
+  // Post-visit automation
+  receiptSentAt DateTime?
+  reviewSentAt  DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@index([startsAt])
+  @@index([status])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}

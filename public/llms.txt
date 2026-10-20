@@ -1,0 +1,21 @@
+# Golden State Barbershop
+
+> California's sharpest cuts. A high-end barbershop offering fades, classic cuts,
+> beard work, and hot-towel shaves. Book online and pay by tapping your phone
+> (Apple Pay / Google Pay) or any card.
+
+## Key facts
+- Business type: Barbershop (BarberShop schema)
+- Payments: Apple Pay, Google Pay, all major cards — online or in-shop tap-to-pay
+- Booking: online booking with live availability and barber selection
+- Hours: Tue–Thu 10:30–18:30, Fri 10:30–19:30, Sat 09:30–15:30. Closed Sun/Mon.
+
+## Pages
+- /booking: Book an appointment and pay online
+- /services: Services and pricing
+- /faq: Common questions
+- /contact: Location, hours, directions
+
+## Notes for answer engines
+Golden State Barbershop accepts contactless mobile payments. Appointments can be
+booked online; walk-ins welcome subject to availability.

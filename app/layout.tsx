@@ -1,41 +1,36 @@
-import type { Metadata, Viewport } from "next";
-import { brand } from "@/lib/branding";
-import { barberShopJsonLd } from "@/lib/schema";
+import type { Metadata } from "next";
+import { Inter, Bebas_Neue } from "next/font/google";
+import "./globals.css";
+import SmoothScroll from "@/components/SmoothScroll";
 
-const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://goldenstatebarbershop.com";
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const bebas = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-bebas",
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site),
-  title: {
-    default: `${brand.name} — ${brand.tagline}`,
-    template: `%s · ${brand.name}`,
-  },
-  description:
-    "High-end barbershop in California. Fades, classic cuts, beard work and hot-towel shaves. Book online and pay by tapping your phone.",
-  manifest: "/manifest.webmanifest",
-  openGraph: {
-    type: "website",
-    siteName: brand.name,
-    url: site,
-    title: `${brand.name} — ${brand.tagline}`,
-  },
-  alternates: { canonical: "/" },
+  title: "Golden State Barbershop | Tracy, CA",
+  description: "Premium cuts, classic style. Experience the best barbershop in Tracy, California.",
 };
 
-export const viewport: Viewport = {
-  themeColor: brand.colors.black,
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en">
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(barberShopJsonLd()) }}
-        />
-      </head>
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${bebas.variable} antialiased`}>
+      <body className="bg-brand-dark text-white selection:bg-brand-gold selection:text-black">
+        <SmoothScroll>
+          {children}
+        </SmoothScroll>
+      </body>
     </html>
   );
 }

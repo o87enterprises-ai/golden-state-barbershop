@@ -184,6 +184,7 @@ function TapToPay() {
 
   const finish = () => {
     if (overlay.context === "shop") clearCart();
+    overlay.onDone?.();
     pushToast({ kind: "success", title: "Payment complete (demo)", body: `${fmt(amount)} — no real charge` });
     closeOverlay();
   };

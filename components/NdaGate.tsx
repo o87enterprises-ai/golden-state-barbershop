@@ -80,7 +80,7 @@ export default function NdaGate({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-brand-dark/95 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex justify-center overflow-y-auto overscroll-contain bg-brand-dark/95 p-4 backdrop-blur-md"
           >
             {/* ambient gold glow */}
             <div className="pointer-events-none absolute left-1/2 top-0 h-[60vh] w-[60vh] -translate-x-1/2 rounded-full bg-brand-gold/10 blur-[120px]" />
@@ -89,7 +89,7 @@ export default function NdaGate({ children }: { children: React.ReactNode }) {
               initial={{ opacity: 0, y: 30, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="relative my-8 w-full max-w-lg rounded-2xl border border-brand-gold/25 bg-brand-charcoal/95 p-8 shadow-[0_0_60px_rgba(212,175,55,0.08)]"
+              className="relative my-auto w-full max-w-lg rounded-2xl border border-brand-gold/25 bg-brand-charcoal/95 p-6 sm:p-8 shadow-[0_0_60px_rgba(212,175,55,0.08)]"
             >
               <p className="font-sans text-[11px] uppercase tracking-[0.2em] text-brand-gold/70">
                 Confidential Preview · NDA Required

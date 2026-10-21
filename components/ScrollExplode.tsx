@@ -73,10 +73,16 @@ function useSegmentedScroll(sectionRef: RefObject<HTMLElement | null>, enabled: 
     if (!enabled || !el) return;
 
     let animating = false;
+    let animTarget: number | null = null; // stop index the current glide is heading to
     let raf = 0;
     let idleTimer = 0;
     let lastWheel = 0;
     let wheelConsumed = false;
+    let gestureDir = 0;
+    let prevAbs = 0;
+    let level = 0; // smoothed recent wheel strength of the current gesture
+    let peak = 0; // strongest wheel event of the current gesture
+    let sawDecay = false; // true once the gesture has dropped to a real coast
     let touching = false;
     let touchStartY = 0;
     let touchDecided = false;
@@ -103,17 +109,23 @@ function useSegmentedScroll(sectionRef: RefObject<HTMLElement | null>, enabled: 
       const from = window.scrollY;
       const to = top + (travel * stop) / SEGMENTS;
       if (Math.abs(to - from) < 1) return;
+      const chained = animating; // retargeting mid-glide: keep moving, don't restart from rest
       cancelAnimationFrame(raf);
       animating = true;
+      animTarget = stop;
+      const ease = chained ? easeOutCubic : easeInOutCubic;
       const segPx = travel / SEGMENTS;
       // full-length glide for a whole segment, shorter for small corrections
       const dur = STEP_MS * Math.max(0.35, Math.min(1, Math.abs(to - from) / segPx));
       const t0 = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - t0) / dur);
-        setY(from + (to - from) * easeInOutCubic(t));
+        setY(from + (to - from) * ease(t));
         if (t < 1) raf = requestAnimationFrame(tick);
-        else animating = false;
+        else {
+          animating = false;
+          animTarget = null;
+        }
       };
       raf = requestAnimationFrame(tick);
     };
@@ -133,20 +145,65 @@ function useSegmentedScroll(sectionRef: RefObject<HTMLElement | null>, enabled: 
       return true;
     };
 
+    // A new gesture while a glide is still playing: head for the stop after the
+    // one we are already going to, so repeated scrolls never get lost.
+    const chain = (dir: 1 | -1) => {
+      if (animTarget === null) return;
+      const next = Math.min(SEGMENTS, Math.max(0, animTarget + dir));
+      if (next !== animTarget) goTo(next);
+    };
+
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return; // pinch-zoom
       const now = performance.now();
-      if (now - lastWheel >= WHEEL_GAP_MS) wheelConsumed = false;
+      const abs = Math.abs(e.deltaY);
+      const dir: 1 | -1 = e.deltaY > 0 ? 1 : -1;
+      const gap = now - lastWheel;
       lastWheel = now;
-      if (animating || wheelConsumed) {
-        // swallow the rest of this gesture (incl. trackpad inertia)
-        e.preventDefault();
-        e.stopImmediatePropagation();
+
+      // Is this the start of a NEW gesture? A touchpad keeps firing (decaying)
+      // inertia events after the fingers lift, so a silence is not the only sign:
+      // a reversed direction, or a fresh swipe landing on top of the coast
+      // (deltas shrinking, then jumping up), also count.
+      if (gap >= WHEEL_GAP_MS) wheelConsumed = false;
+      else if (wheelConsumed && abs >= 12) {
+        if (dir !== gestureDir) wheelConsumed = false;
+        // jitter stays well below 2x the smoothed level; a real new swipe is far above it
+        else if (sawDecay && abs >= 15 && abs > level * 2.2) wheelConsumed = false;
+      }
+      if (wheelConsumed) {
+        peak = Math.max(peak, abs);
+        // only a clear drop below the gesture's own peak counts as coasting (not jitter)
+        if (abs < peak * 0.5) sawDecay = true;
+        level = level * 0.7 + abs * 0.3;
+      } else {
+        level = abs;
+      }
+      prevAbs = abs;
+
+      if (!wheelConsumed && abs >= 2) {
+        if (animating) {
+          chain(dir);
+          wheelConsumed = true;
+          gestureDir = dir;
+          sawDecay = false;
+          peak = abs;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+        if (step(dir)) {
+          wheelConsumed = true;
+          gestureDir = dir;
+          sawDecay = false;
+          peak = abs;
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
         return;
       }
-      if (Math.abs(e.deltaY) < 2) return;
-      if (step(e.deltaY > 0 ? 1 : -1)) {
-        wheelConsumed = true;
+      if (animating || wheelConsumed) {
+        // swallow the rest of this gesture (incl. its inertia)
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -158,16 +215,20 @@ function useSegmentedScroll(sectionRef: RefObject<HTMLElement | null>, enabled: 
       touchStartY = e.touches[0].clientY;
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (animating) {
-        // keep swallowing the rest of this finger gesture while a step plays
-        if (e.cancelable) e.preventDefault();
+      const dy = touchStartY - e.touches[0].clientY;
+      if (!touchDecided && Math.abs(dy) >= 8) {
+        touchDecided = true; // one decision per gesture
+        const dir: 1 | -1 = dy > 0 ? 1 : -1;
+        if (animating) {
+          chain(dir);
+          if (e.cancelable) e.preventDefault();
+          return;
+        }
+        if (step(dir) && e.cancelable) e.preventDefault();
         return;
       }
-      if (touchDecided) return;
-      const dy = touchStartY - e.touches[0].clientY;
-      if (Math.abs(dy) < 8) return;
-      touchDecided = true; // one decision per gesture
-      if (step(dy > 0 ? 1 : -1) && e.cancelable) e.preventDefault();
+      // keep swallowing the rest of this finger gesture while a step plays
+      if (animating && e.cancelable) e.preventDefault();
     };
     const onTouchEnd = () => {
       touching = false;

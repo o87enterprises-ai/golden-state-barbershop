@@ -3,7 +3,15 @@
 import { useRef, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 
-export default function ScrollVideo() {
+export default function ScrollVideo({
+  src = "/clippers.mp4",
+  seconds = 15,
+  heightClass = "h-[300vh]",
+}: {
+  src?: string;
+  seconds?: number;
+  heightClass?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -13,7 +21,7 @@ export default function ScrollVideo() {
   });
 
   // Map scroll progress (0 to 1) to the video duration
-  const videoTime = useTransform(scrollYProgress, [0, 1], [0, 15]); // Assuming a 15-second video
+  const videoTime = useTransform(scrollYProgress, [0, 1], [0, seconds]);
 
   useEffect(() => {
     // Sync the video time to the scroll value
@@ -31,13 +39,13 @@ export default function ScrollVideo() {
   const textOpacity3 = useTransform(scrollYProgress, [0.7, 0.9, 1], [0, 1, 1]);
 
   return (
-    <section ref={containerRef} className="relative h-[300vh] bg-black">
+    <section ref={containerRef} className={`relative bg-black ${heightClass}`}>
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
         
         {/* The Video Background */}
         <video
           ref={videoRef}
-          src="/clippers.mp4"
+          src={src}
           muted
           playsInline
           className="absolute inset-0 w-full h-full object-cover opacity-40"

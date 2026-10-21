@@ -64,7 +64,7 @@ export default function BookPage() {
       status: "Upcoming",
       price: chosenService.price,
     });
-    openOverlay({ type: "tap", amount: chosenService.price, context: "booking" });
+    openOverlay({ type: "stripe", amount: chosenService.price, context: "booking" });
   };
 
   return (

@@ -28,7 +28,7 @@ import {
 
 export type CartItem = { product: Product; qty: number };
 
-export type OverlayType = "book" | "shop" | "tap" | "share" | null;
+export type OverlayType = "book" | "shop" | "tap" | "stripe" | "share" | null;
 export type OverlayState = {
   type: OverlayType;
   amount?: number;

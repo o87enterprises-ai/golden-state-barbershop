@@ -337,7 +337,7 @@ export default function ScrollExplode({ heightClass = DEFAULT_HEIGHT }: { height
             style={{ opacity: textOpacity1 }}
             className="absolute inset-x-0 top-0 font-display text-4xl tracking-widest text-brand-gold sm:text-5xl md:text-7xl"
           >
-            Precision Engineered
+            Precision Cuts
           </motion.h2>
           <motion.h2
             style={{ opacity: textOpacity2 }}

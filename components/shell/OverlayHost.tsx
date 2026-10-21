@@ -48,14 +48,20 @@ function Header({ title, onClose, pad }: { title: string; onClose: () => void; p
   );
 }
 
+const FADES = ["Skin fade", "Taper fade", "Low fade", "Mid fade", "High fade", "Scissor cut"];
+
 function BookingModal() {
-  const { closeOverlay, addAppointment, openOverlay, pushToast } = useDemo();
+  const { closeOverlay, addAppointment, openOverlay } = useDemo();
   const [svc, setSvc] = useState(services[1].id);
   const [bar, setBar] = useState(barbers[0].id);
   const [time, setTime] = useState(times[2]);
+  const [fade, setFade] = useState(FADES[0]);
+  const [notes, setNotes] = useState("");
   const service = serviceById(svc)!;
 
-  const confirm = (withDeposit: boolean) => {
+  // Payment in full is required to confirm — this adds the appointment and
+  // hands off to the Tap-to-Pay step for the full service price.
+  const payInFull = () => {
     addAppointment({
       customerId: "me",
       customerName: "Alex Morgan",
@@ -66,12 +72,7 @@ function BookingModal() {
       status: "Upcoming",
       price: service.price,
     });
-    if (withDeposit) {
-      openOverlay({ type: "tap", amount: 10, context: "deposit" });
-    } else {
-      pushToast({ kind: "success", title: "Appointment booked", body: `${service.name} · ${time}` });
-      closeOverlay();
-    }
+    openOverlay({ type: "tap", amount: service.price, context: "booking" });
   };
 
   return (
@@ -92,17 +93,27 @@ function BookingModal() {
       </div>
 
       <label className="mb-1 block font-sans text-xs uppercase tracking-wider text-white/50">Time (tomorrow)</label>
-      <div className="mb-6 grid grid-cols-4 gap-2">
+      <div className="mb-5 grid grid-cols-4 gap-2">
         {times.map((t) => (
           <button key={t} onClick={() => setTime(t)} className={`rounded-lg border py-2 text-xs transition-colors ${time === t ? "border-brand-gold bg-brand-gold/10 text-brand-gold" : "border-white/10 text-white/70"}`}>{t}</button>
         ))}
       </div>
 
-      <div className="flex gap-3">
-        <button onClick={() => confirm(false)} className="flex-1 rounded-sm border border-brand-gold/40 py-3 font-display text-lg tracking-widest text-brand-gold transition-colors hover:bg-brand-gold hover:text-black">Book</button>
-        <button onClick={() => confirm(true)} className="flex-1 rounded-sm bg-brand-gold py-3 font-display text-lg tracking-widest text-black transition-colors hover:bg-brand-gold/90">Book + $10 Deposit</button>
+      {/* Style guide — captured before payment */}
+      <div className="mb-6 rounded-lg border border-brand-gold/20 bg-brand-dark p-4">
+        <p className="mb-3 font-sans text-xs uppercase tracking-widest text-brand-gold/70">How do you like your cut?</p>
+        <label className="mb-1 block font-sans text-xs text-white/50">Fade type</label>
+        <select value={fade} onChange={(e) => setFade(e.target.value)} className="mb-3 w-full rounded-lg border border-white/15 bg-brand-charcoal px-3 py-2 text-sm text-white outline-none focus:border-brand-gold">
+          {FADES.map((f) => <option key={f}>{f}</option>)}
+        </select>
+        <label className="mb-1 block font-sans text-xs text-white/50">Notes for your barber</label>
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Guards, lineup, allergies…" className="w-full rounded-lg border border-white/15 bg-brand-charcoal px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-brand-gold" />
       </div>
-      <p className="mt-4 text-center font-sans text-[11px] uppercase tracking-widest text-white/30">Demo booking · no real appointment</p>
+
+      <button onClick={payInFull} className="flex w-full items-center justify-center gap-2 rounded-sm bg-brand-gold py-3 font-display text-xl tracking-widest text-black transition-colors hover:bg-brand-gold/90">
+        <CreditCard size={18} /> Pay {fmt(service.price)} &amp; Confirm
+      </button>
+      <p className="mt-4 text-center font-sans text-[11px] uppercase tracking-widest text-white/30">Payment in full confirms your booking · demo — no charge</p>
     </Shell>
   );
 }

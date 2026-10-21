@@ -131,6 +131,16 @@ export const seedAppointments: Appointment[] = [
   { id: "a5", customerId: "c3", customerName: "Mike Tran", serviceId: "beard", barberId: "deon", day: "Today", time: "12:00", status: "Upcoming", price: 25 },
   { id: "a6", customerId: "c4", customerName: "Sofia Reyes", serviceId: "classic", barberId: "tony", day: "Today", time: "13:30", status: "Upcoming", price: 35 },
   { id: "a7", customerId: "c2", customerName: "Andre Collins", serviceId: "full", barberId: "marcus", day: "Today", time: "15:00", status: "Upcoming", price: 60 },
+  // Fuller day so the admin schedule overview looks real
+  { id: "a8", customerId: "w1", customerName: "Chris Daniels", serviceId: "classic", barberId: "deon", day: "Today", time: "11:15", status: "Upcoming", price: 35 },
+  { id: "a9", customerId: "w2", customerName: "Leo Park", serviceId: "fade", barberId: "tony", day: "Today", time: "11:30", status: "Upcoming", price: 40 },
+  { id: "a10", customerId: "w3", customerName: "Ray Soto", serviceId: "beard", barberId: "marcus", day: "Today", time: "13:00", status: "Upcoming", price: 25 },
+  { id: "a11", customerId: "w4", customerName: "Victor Hughes", serviceId: "full", barberId: "deon", day: "Today", time: "14:00", status: "Upcoming", price: 60 },
+  { id: "a12", customerId: "w5", customerName: "Omar Fuentes", serviceId: "classic", barberId: "tony", day: "Today", time: "16:00", status: "Upcoming", price: 35 },
+  { id: "a13", customerId: "w6", customerName: "DeShawn B.", serviceId: "lineup", barberId: "marcus", day: "Today", time: "17:00", status: "Upcoming", price: 15 },
+  { id: "a14", customerId: "w7", customerName: "Paul Nguyen", serviceId: "fade", barberId: "deon", day: "Tomorrow", time: "10:30", status: "Upcoming", price: 40 },
+  { id: "a15", customerId: "w8", customerName: "Marcus Lee", serviceId: "full", barberId: "tony", day: "Tomorrow", time: "12:00", status: "Upcoming", price: 60 },
+  { id: "a16", customerId: "w9", customerName: "Ivan Petrov", serviceId: "classic", barberId: "marcus", day: "Tomorrow", time: "15:30", status: "Upcoming", price: 35 },
 ];
 
 export const seedQueue: QueueEntry[] = [

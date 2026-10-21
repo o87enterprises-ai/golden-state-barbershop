@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingBag, ChevronDown, Scissors, Store, User, Radio, Shield } from "lucide-react";
+import { Menu, X, ShoppingBag, ChevronDown, Scissors, Store, User, CalendarDays, Shield } from "lucide-react";
 import { useDemo } from "@/lib/mock/DemoStore";
 import { Role } from "@/lib/mock/data";
 
@@ -79,14 +79,16 @@ export default function MegaNav() {
     },
     {
       key: "live",
-      label: "Live",
-      icon: Radio,
+      label: "Schedule",
+      icon: CalendarDays,
       cols: [
         {
-          heading: "Right Now",
+          heading: "Schedule",
           links: [
-            { label: "Live Lineup", href: "/#live-lineup" },
-            { label: "Chair Status (Admin)", href: "/admin/chairs" },
+            { label: "View Availability", href: "/#live-lineup" },
+            ...(role === "admin"
+              ? [{ label: "Full Schedule", href: "/admin/schedule" }]
+              : []),
           ],
         },
       ],
@@ -116,13 +118,23 @@ export default function MegaNav() {
     });
   }
 
-  const mobileLinks: { label: string; href: string; icon: typeof Scissors }[] = [
-    { label: "Services", href: "/menu", icon: Scissors },
-    { label: "Shop", href: "/shop", icon: Store },
-    { label: "Live Availability", href: "/#live-lineup", icon: Radio },
-    { label: "My Account", href: "/portal", icon: User },
-    ...(role === "admin" ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
-  ];
+  const mobileLinks: { label: string; href: string; icon: typeof Scissors }[] =
+    role === "admin"
+      ? [
+          { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+          { label: "Admin / POS", href: "/admin", icon: Shield },
+          { label: "My Account", href: "/portal", icon: User },
+        ]
+      : [
+          { label: "Services", href: "/menu", icon: Scissors },
+          { label: "Shop", href: "/shop", icon: Store },
+          { label: "Schedule", href: "/#live-lineup", icon: CalendarDays },
+          { label: "My Account", href: "/portal", icon: User },
+        ];
+
+  // Admin is POS-first — hide the customer storefront (Services + Shop).
+  const visibleMenus =
+    role === "admin" ? menus.filter((m) => m.key !== "services" && m.key !== "shop") : menus;
 
   const roles: Role[] = ["public", "customer", "admin"];
 
@@ -136,7 +148,7 @@ export default function MegaNav() {
 
           {/* desktop menus */}
           <div className="hidden items-center gap-1 lg:flex">
-            {menus.map((m) => (
+            {visibleMenus.map((m) => (
               <div key={m.key} className="relative">
                 <button
                   aria-expanded={open === m.key}
@@ -151,24 +163,35 @@ export default function MegaNav() {
                 </button>
               </div>
             ))}
-            <button
-              onClick={() => openOverlay({ type: "book" })}
-              className="ml-2 rounded-sm bg-brand-red px-5 py-2 font-display text-lg tracking-wider text-white transition-colors hover:bg-red-700"
-            >
-              Book Now
-            </button>
-            <button
-              onClick={() => openOverlay({ type: "shop" })}
-              aria-label="Cart"
-              className="relative ml-2 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition-colors hover:border-brand-gold hover:text-brand-gold"
-            >
-              <ShoppingBag size={18} />
-              {cartCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-gold px-1 font-sans text-[10px] font-bold text-black">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+            {role === "admin" ? (
+              <Link
+                href="/admin/checkout"
+                className="ml-2 rounded-sm bg-brand-gold px-5 py-2 font-display text-lg tracking-wider text-black transition-colors hover:bg-brand-gold/90"
+              >
+                Open Register
+              </Link>
+            ) : (
+              <>
+                <button
+                  onClick={() => openOverlay({ type: "book" })}
+                  className="ml-2 rounded-sm bg-brand-red px-5 py-2 font-display text-lg tracking-wider text-white transition-colors hover:bg-red-700"
+                >
+                  Book Now
+                </button>
+                <button
+                  onClick={() => openOverlay({ type: "shop" })}
+                  aria-label="Cart"
+                  className="relative ml-2 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/80 transition-colors hover:border-brand-gold hover:text-brand-gold"
+                >
+                  <ShoppingBag size={18} />
+                  {cartCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-gold px-1 font-sans text-[10px] font-bold text-black">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
           </div>
 
           {/* role switcher */}
@@ -203,7 +226,7 @@ export default function MegaNav() {
               className="absolute left-0 right-0 hidden border-b border-white/10 bg-brand-charcoal/98 backdrop-blur-xl lg:block"
             >
               <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-6 py-8 md:grid-cols-4">
-                {menus
+                {visibleMenus
                   .find((m) => m.key === open)!
                   .cols.map((col) => (
                     <div key={col.heading}>
@@ -285,15 +308,25 @@ export default function MegaNav() {
                 ))}
               </ul>
 
-              <button
-                onClick={() => {
-                  openOverlay({ type: "book" });
-                  setMobile(false);
-                }}
-                className="w-full rounded-lg bg-brand-gold py-3 font-display text-xl tracking-widest text-black transition-colors hover:bg-brand-gold/90"
-              >
-                Book Now
-              </button>
+              {role === "admin" ? (
+                <Link
+                  href="/admin/checkout"
+                  onClick={() => setMobile(false)}
+                  className="block w-full rounded-lg bg-brand-gold py-3 text-center font-display text-xl tracking-widest text-black transition-colors hover:bg-brand-gold/90"
+                >
+                  Open Register
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    openOverlay({ type: "book" });
+                    setMobile(false);
+                  }}
+                  className="w-full rounded-lg bg-brand-gold py-3 font-display text-xl tracking-widest text-black transition-colors hover:bg-brand-gold/90"
+                >
+                  Book Now
+                </button>
+              )}
             </div>
           </motion.div>
         )}

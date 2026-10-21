@@ -210,7 +210,12 @@ export default function MegaNav() {
           </div>
 
           {/* mobile toggle */}
-          <button className="text-white lg:hidden" onClick={() => setMobile(!mobile)} aria-label="Menu">
+          <button
+            className="flex items-center gap-2 text-white lg:hidden"
+            onClick={() => setMobile(!mobile)}
+            aria-label={mobile ? "Close menu" : "Open menu"}
+          >
+            <span className="font-display text-lg uppercase tracking-widest">Menu</span>
             {mobile ? <X /> : <Menu />}
           </button>
         </div>

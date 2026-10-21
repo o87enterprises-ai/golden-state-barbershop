@@ -29,7 +29,12 @@ import {
 export type CartItem = { product: Product; qty: number };
 
 export type OverlayType = "book" | "shop" | "tap" | "share" | null;
-export type OverlayState = { type: OverlayType; amount?: number; context?: string };
+export type OverlayState = {
+  type: OverlayType;
+  amount?: number;
+  context?: string;
+  onDone?: () => void;
+};
 
 export type Toast = { id: string; title: string; body?: string; kind?: "info" | "success" | "buzz" };
 

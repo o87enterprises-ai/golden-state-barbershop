@@ -103,6 +103,7 @@ export default function MegaNav() {
           heading: "Shop Management",
           links: [
             { label: "Dashboard", href: "/admin" },
+            { label: "Checkout / Register", href: "/admin/checkout" },
             { label: "Schedule", href: "/admin/schedule" },
             { label: "Revenue", href: "/admin/revenue" },
             { label: "Queue", href: "/admin/queue" },

@@ -115,6 +115,14 @@ export default function MegaNav() {
     });
   }
 
+  const mobileLinks: { label: string; href: string; icon: typeof Scissors }[] = [
+    { label: "Services", href: "/menu", icon: Scissors },
+    { label: "Shop", href: "/shop", icon: Store },
+    { label: "Live Availability", href: "/#live-lineup", icon: Radio },
+    { label: "My Account", href: "/portal", icon: User },
+    ...(role === "admin" ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
+  ];
+
   const roles: Role[] = ["public", "customer", "admin"];
 
   return (
@@ -243,7 +251,9 @@ export default function MegaNav() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden border-b border-white/10 bg-brand-charcoal lg:hidden"
           >
-            <div className="max-h-[70vh] space-y-6 overflow-y-auto p-6">
+            <div className="max-h-[75vh] space-y-6 overflow-y-auto p-6">
+              <h2 className="font-display text-2xl tracking-widest text-brand-gold">Menu</h2>
+
               <div className="flex items-center gap-1 rounded-full border border-white/10 bg-brand-dark p-1">
                 {roles.map((r) => (
                   <button
@@ -257,38 +267,32 @@ export default function MegaNav() {
                   </button>
                 ))}
               </div>
-              {menus.map((m) => (
-                <div key={m.key}>
-                  <p className="mb-2 flex items-center gap-2 font-sans text-xs uppercase tracking-widest text-brand-gold/60">
-                    <m.icon size={14} /> {m.label}
-                  </p>
-                  <ul className="space-y-2 pl-6">
-                    {m.cols.flatMap((c) => c.links).map((l) => (
-                      <li key={l.label}>
-                        {l.href ? (
-                          <Link
-                            href={l.href}
-                            onClick={() => setMobile(false)}
-                            className="font-sans text-sm text-white/70"
-                          >
-                            {l.label}
-                          </Link>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              l.action?.();
-                              setMobile(false);
-                            }}
-                            className="font-sans text-sm text-white/70"
-                          >
-                            {l.label}
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+
+              {/* Concise links only — full menus live on the landing page,
+                  account tools live in the portal sidebar. No Book Now here. */}
+              <ul className="space-y-1">
+                {mobileLinks.map((l) => (
+                  <li key={l.label}>
+                    <Link
+                      href={l.href}
+                      onClick={() => setMobile(false)}
+                      className="flex items-center gap-3 rounded-lg px-2 py-3 font-sans text-base text-white/80 transition-colors hover:bg-white/5 hover:text-brand-gold"
+                    >
+                      <l.icon size={18} className="text-brand-gold" /> {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => {
+                  openOverlay({ type: "book" });
+                  setMobile(false);
+                }}
+                className="w-full rounded-lg bg-brand-gold py-3 font-display text-xl tracking-widest text-black transition-colors hover:bg-brand-gold/90"
+              >
+                Book Now
+              </button>
             </div>
           </motion.div>
         )}

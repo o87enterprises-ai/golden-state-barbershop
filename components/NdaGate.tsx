@@ -80,7 +80,7 @@ export default function NdaGate({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex justify-center overflow-y-auto overscroll-contain bg-brand-dark/95 p-4 backdrop-blur-md"
+            className="fixed inset-x-0 top-0 z-[100] flex h-screen h-[100dvh] justify-center overflow-y-auto overscroll-contain bg-brand-dark/95 px-4 pb-32 pt-6 backdrop-blur-md"
           >
             {/* ambient gold glow */}
             <div className="pointer-events-none absolute left-1/2 top-0 h-[60vh] w-[60vh] -translate-x-1/2 rounded-full bg-brand-gold/10 blur-[120px]" />

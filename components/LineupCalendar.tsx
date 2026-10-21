@@ -71,10 +71,10 @@ export default function LineupCalendar() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-red opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-red" />
             </span>
-            Live Availability
+            Schedule
           </p>
           <h2 className="mt-2 font-display text-4xl tracking-widest text-brand-gold md:text-5xl">
-            Pick Your Time
+            Book a Time
           </h2>
         </div>
 

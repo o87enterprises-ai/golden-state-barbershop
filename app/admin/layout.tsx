@@ -16,7 +16,7 @@ import { useDemo } from "@/lib/mock/DemoStore";
 
 const tabs = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/checkout", label: "Checkout", icon: CreditCard },
+  { href: "/admin/checkout", label: "POS / Register", icon: CreditCard },
   { href: "/admin/schedule", label: "Schedule", icon: CalendarDays },
   { href: "/admin/revenue", label: "Revenue", icon: DollarSign },
   { href: "/admin/queue", label: "Queue", icon: ListOrdered },

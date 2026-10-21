@@ -48,7 +48,7 @@ C:\\Users\\there\\o87DevMobile\\Specs\\GoldenGate
 
 │   ├── layout.tsx (Fonts: Inter + Bebas Neue, Lenis wrapper)
 
-│   └── page.tsx (Imports Navbar, Hero, ScrollVideo, Services)
+│   └── page.tsx (Imports Hero, ScrollExplode, LineupCalendar, Services, Footer)
 
 ├── components
 
@@ -56,7 +56,7 @@ C:\\Users\\there\\o87DevMobile\\Specs\\GoldenGate
 
 │   ├── Navbar.tsx (Glassmorphism, mobile menu dropdown)
 
-│   ├── ScrollVideo.tsx (Scroll-scrubbing video background with text fades)
+│   ├── ScrollExplode.tsx (Scroll-driven exploded clipper animation built from transparent part images; positions in lib/clipperParts.ts)
 
 │   ├── Services.tsx (Staggered menu cards with hover glow)
 
@@ -66,7 +66,7 @@ C:\\Users\\there\\o87DevMobile\\Specs\\GoldenGate
 
 │   ├── logo.png (The 3D metallic bear/barber pole logo)
 
-│   └── clippers.mp4 (Placeholder video for the scroll scrubber)
+│   └── clipper/ (Transparent WebP parts used by ScrollExplode)
 
 ├── lib
 

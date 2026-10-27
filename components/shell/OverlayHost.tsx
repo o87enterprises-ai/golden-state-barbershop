@@ -126,6 +126,114 @@ function TapToPay() {
   );
 }
 
+// Stripe-styled card checkout for online bookings. In-store payments use the
+// Tap to Pay screen above. Closing before approval cancels; onDone runs on success.
+function StripeCheckout() {
+  const { overlay, closeOverlay, pushToast } = useDemo();
+  const amount = overlay.amount ?? 0;
+  const [stage, setStage] = useState<"form" | "processing" | "done">("form");
+  const [card, setCard] = useState(PAYMENTS_SIMULATED ? "4242 4242 4242 4242" : "");
+  const [exp, setExp] = useState(PAYMENTS_SIMULATED ? "12 / 34" : "");
+  const [cvc, setCvc] = useState(PAYMENTS_SIMULATED ? "123" : "");
+  const [zip, setZip] = useState("");
+  const [ref] = useState(() => `pi_test_${Math.floor(Math.random() * 9e9 + 1e9)}`);
+
+  useEffect(() => {
+    if (stage === "processing") {
+      const t = setTimeout(() => setStage("done"), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [stage]);
+
+  const finish = () => {
+    overlay.onDone?.();
+    pushToast({
+      kind: "success",
+      title: "Payment complete",
+      body: `${fmtMoney(amount)}${PAYMENTS_SIMULATED ? " — test mode, no real charge" : ""}`,
+    });
+    closeOverlay();
+  };
+
+  const field = "w-full rounded-md border border-[#e6e6e6] bg-white px-3 py-2.5 text-sm text-[#1a1f36] outline-none placeholder:text-[#a3acb9] focus:border-[#635bff] focus:shadow-[0_0_0_3px_rgba(99,91,255,0.25)]";
+  const label = "mb-1 block text-xs font-medium text-[#4f566b]";
+  const close = stage === "done" ? finish : closeOverlay;
+
+  return (
+    <Shell onClose={close}>
+      <div className="-m-6 overflow-hidden rounded-2xl bg-white text-[#1a1f36]">
+        <div className="flex items-center justify-between border-b border-[#e6e6e6] px-6 py-4">
+          <div>
+            <p className="text-xs text-[#4f566b]">Golden State Barbershop</p>
+            <p className="text-2xl font-semibold">{fmtMoney(amount)}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {PAYMENTS_SIMULATED && (
+              <span className="rounded bg-[#ffe9b8] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#8a5a00]">Test mode</span>
+            )}
+            <button onClick={close} className="text-[#4f566b] hover:text-black" aria-label="Close"><X size={20} /></button>
+          </div>
+        </div>
+
+        {stage === "form" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setStage("processing");
+            }}
+            className="space-y-4 px-6 py-5"
+          >
+            <div>
+              <label className={label}>Card information</label>
+              <input value={card} onChange={(e) => setCard(e.target.value)} inputMode="numeric" autoComplete="cc-number" placeholder="1234 1234 1234 1234" required className={`${field} rounded-b-none`} />
+              <div className="grid grid-cols-2">
+                <input value={exp} onChange={(e) => setExp(e.target.value)} placeholder="MM / YY" autoComplete="cc-exp" required className={`${field} rounded-t-none rounded-br-none border-t-0`} />
+                <input value={cvc} onChange={(e) => setCvc(e.target.value)} placeholder="CVC" autoComplete="cc-csc" required className={`${field} rounded-t-none rounded-bl-none border-l-0 border-t-0`} />
+              </div>
+            </div>
+            <div>
+              <label className={label}>ZIP</label>
+              <input value={zip} onChange={(e) => setZip(e.target.value)} inputMode="numeric" autoComplete="postal-code" required className={field} />
+            </div>
+            <button type="submit" className="w-full rounded-md bg-[#635bff] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#5249e6]">
+              Pay {fmtMoney(amount)}
+            </button>
+            {PAYMENTS_SIMULATED && (
+              <p className="text-center text-[11px] text-[#a3acb9]">Demo only — test card pre-filled. No real charge.</p>
+            )}
+          </form>
+        )}
+
+        {stage === "processing" && (
+          <div className="flex flex-col items-center gap-4 px-6 py-14">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#e6e6e6] border-t-[#635bff]" />
+            <p className="text-sm text-[#4f566b]">Processing payment…</p>
+          </div>
+        )}
+
+        {stage === "done" && (
+          <div className="px-6 py-8 text-center">
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 160, damping: 12 }} className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#30b130] text-white">
+              <Check size={34} strokeWidth={3} />
+            </motion.div>
+            <p className="mt-4 text-xl font-semibold">Payment successful</p>
+            <div className="mt-4 rounded-md border border-[#e6e6e6] bg-[#f6f9fc] p-4 text-left text-xs text-[#4f566b]">
+              <div className="flex justify-between"><span>Amount</span><span className="text-[#1a1f36]">{fmtMoney(amount)}</span></div>
+              <div className="mt-1 flex justify-between"><span>Card</span><span className="text-[#1a1f36]">•••• {card.replace(/\D/g, "").slice(-4) || "0000"}</span></div>
+              <div className="mt-1 flex justify-between"><span>Reference</span><span className="text-[#1a1f36]">{ref}</span></div>
+            </div>
+            <button onClick={finish} className="mt-5 w-full rounded-md bg-[#635bff] py-3 text-sm font-semibold text-white hover:bg-[#5249e6]">Done</button>
+          </div>
+        )}
+
+        <div className="border-t border-[#e6e6e6] bg-[#f6f9fc] px-6 py-3 text-center text-[11px] text-[#697386]">
+          Powered by <span className="font-semibold text-[#4f566b]">Stripe</span> · Terms · Privacy
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 function ShareModal() {
   const { closeOverlay, pushToast } = useDemo();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -213,6 +321,7 @@ export default function OverlayHost() {
   return (
     <AnimatePresence>
       {overlay.type === "tap" && <TapToPay key="tap" />}
+      {overlay.type === "stripe" && <StripeCheckout key="stripe" />}
       {overlay.type === "share" && <ShareModal key="share" />}
     </AnimatePresence>
   );

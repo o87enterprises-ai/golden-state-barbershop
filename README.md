@@ -62,7 +62,5 @@ The storefront, accounts, time clock, bookings, and POS currently run on a **cli
 | `NEXT_PUBLIC_PAYMENTS_LIVE=1` | Hides the "simulated payment" labels once a processor is connected |
 | `NEXT_PUBLIC_GOOGLE_REVIEW_URL` | Shows the review prompt on the confirmation page |
 
-## 3D hero assets
-- Drop the artist's model at `public/clipper.glb` with nodes named `Blade`, `Motor`, `Coil`; the scene uses it automatically (placeholder shapes otherwise).
-- `public/clippers.mp4` is ~5.4 MB. Re-encode to 5 MB or less with no audio track (HandBrake: H.264, RF 26, audio off). Phones and reduced-motion users never load it.
-- If the 3D model is blank in Firefox, check `about:support` → Graphics; "Blocked" means the GPU driver needs updating. The page falls back gracefully.
+## Hero scroll animation
+- The landing page's clipper breakdown is code-driven (components/ScrollExplode.tsx) using the part images in public/clipper/. It needs no WebGL or video.

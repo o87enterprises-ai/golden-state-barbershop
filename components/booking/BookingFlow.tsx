@@ -100,7 +100,7 @@ function Flow({ embedded }: { embedded?: boolean }) {
     }
     const assigned = stillFree[0];
     demo.openOverlay({
-      type: "tap",
+      type: "stripe",
       amount: chosenService.price,
       context: "booking",
       onDone: () => {

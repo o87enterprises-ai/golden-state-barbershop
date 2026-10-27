@@ -33,7 +33,7 @@ import { buildDemo, demoBarbers } from "./demo";
 import { SEED_DEMO } from "@/lib/config";
 import { useAuth } from "@/lib/auth/AuthStore";
 
-export type OverlayType = "tap" | "share" | null;
+export type OverlayType = "tap" | "stripe" | "share" | null;
 export type OverlayState = {
   type: OverlayType;
   amount?: number;

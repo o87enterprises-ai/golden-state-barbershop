@@ -1,134 +1,88 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import * as THREE from 'three';
-import dynamic from 'next/dynamic';
+import { useRef } from 'react';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { clipperParts, STAGE_ASPECT } from '@/lib/clipperParts';
 
-const ClipperScene = dynamic(
-  () => import('./3d/ClipperScene').then((m) => m.ClipperScene),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="absolute inset-0 z-0 flex items-center justify-center text-white/40">
-        Loading 3D Scene…
-      </div>
-    ),
-  }
-);
+// Left: headline. Right: the clipper's parts slowly spin and orbit while the
+// section is on screen. Pure CSS-transform animation (no WebGL, no scroll
+// pinning), so it works on every browser and phone.
 
-// 'use client' components are still pre-rendered on the server — guard the plugin registration.
-if (typeof window !== 'undefined') gsap.registerPlugin(ScrollTrigger);
+// Circular drift as x/y keyframes, rotated by `phase` so parts aren't in lockstep.
+function orbit(r: number, phase: number) {
+  const xs = [0, r, 0, -r];
+  const ys = [-r, 0, r, 0];
+  const x = Array.from({ length: 5 }, (_, i) => xs[(i + phase) % 4]);
+  const y = Array.from({ length: 5 }, (_, i) => ys[(i + phase) % 4]);
+  return { x, y };
+}
 
-export default function ClipperBreakdown() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const groupRef = useRef<THREE.Group>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const [sceneReady, setSceneReady] = useState(false);
-  const [sceneBlocked, setSceneBlocked] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
-  // Scrubbing an mp4 stutters on phones and costs battery, so small screens and
-  // reduced-motion users get a static backdrop instead of the video.
-  const [useVideo, setUseVideo] = useState<boolean | null>(null);
-
-  const onReady = useCallback(() => setSceneReady(true), []);
-  const onUnavailable = useCallback(() => setSceneBlocked(true), []);
-
-  useEffect(() => {
-    const small = window.matchMedia('(max-width: 767px)');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () => setUseVideo(!small.matches && !reduced.matches);
-    update();
-    small.addEventListener('change', update);
-    reduced.addEventListener('change', update);
-    return () => {
-      small.removeEventListener('change', update);
-      reduced.removeEventListener('change', update);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!sceneReady || sceneBlocked || useVideo === null) return;
-    if (useVideo && !videoReady) return;
-
-    const container = containerRef.current;
-    const group = groupRef.current;
-    if (!container || !group) return;
-
-    const blade = group.getObjectByName('Blade');
-    const motor = group.getObjectByName('Motor');
-    const coil = group.getObjectByName('Coil');
-    if (!blade || !motor || !coil) return; // model without the expected part names: stay static
-
-    const video = videoRef.current;
-    const mm = gsap.matchMedia();
-
-    mm.add('(prefers-reduced-motion: no-preference)', () => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: container,
-          start: 'top top',
-          end: '+=4000',
-          scrub: 1.2,
-          pin: true,
-          anticipatePin: 1,
-        },
-      });
-
-      // Phase 1 — video scrub + dissection
-      if (video && Number.isFinite(video.duration)) {
-        tl.to(video, { currentTime: video.duration, duration: 2, ease: 'none' }, 0);
-      }
-      tl.to(blade.position, { y: 4, z: -2, duration: 1 }, 0)
-        .to(blade.rotation, { z: 0.5, duration: 1 }, 0)
-        .to(motor.position, { y: 0, z: 0, duration: 1 }, 0)
-        .to(coil.position, { y: -4, z: 2, duration: 1 }, 0)
-        .to(coil.rotation, { z: 1, duration: 1 }, 0)
-
-        // Phase 2 — camera tilt
-        .to(group.rotation, { x: 0.6, y: -0.4, duration: 1 }, 1)
-
-        // Phase 3 — orbital
-        .to(group.rotation, { y: Math.PI * 2, duration: 2, ease: 'none' }, 2)
-        .to(coil.position, { x: 3, y: 0, z: 3, duration: 2, ease: 'power1.inOut' }, 2)
-        .to(coil.rotation, { z: Math.PI * 2, duration: 2, ease: 'power1.inOut' }, 2);
-    });
-
-    ScrollTrigger.refresh();
-
-    return () => mm.revert(); // kills timeline + ScrollTrigger + pin
-  }, [sceneReady, sceneBlocked, useVideo, videoReady]);
+function Part({ i, run }: { i: number; run: boolean }) {
+  const p = clipperParts[i];
+  const r = p.small ? 18 : 7;
+  const { x, y } = orbit(r, i % 4);
+  const loop = { repeat: Infinity, ease: 'linear' as const };
 
   return (
-    <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-[#0a0a0a]">
-      {/* 1. Backdrop: scrubbed video on capable screens, static gradient elsewhere */}
-      {useVideo ? (
+    <motion.div
+      className="absolute"
+      style={{ left: `${p.left}%`, top: `${p.top}%`, width: `${p.width}%`, height: `${p.height}%` }}
+      animate={run ? { x, y, rotate: p.small ? [0, 360] : [-2, 2, -2] } : { x: 0, y: 0, rotate: 0 }}
+      transition={
+        run
+          ? {
+              x: { ...loop, duration: 16 + (i % 5) * 3 },
+              y: { ...loop, duration: 16 + (i % 5) * 3 },
+              rotate: p.small
+                ? { ...loop, duration: 24 + (i % 3) * 8 }
+                : { repeat: Infinity, ease: 'easeInOut', duration: 9 + (i % 4) * 2 },
+            }
+          : { duration: 0.6 }
+      }
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/clipper/${p.id}.webp`}
+        alt={p.label}
+        draggable={false}
+        className="h-full w-full select-none object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.6)]"
+      />
+    </motion.div>
+  );
+}
+
+export default function ClipperBreakdown() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { amount: 0.2, initial: true });
+  const reduced = useReducedMotion();
+  const run = inView && !reduced;
+
+  return (
+    <section
+      ref={ref}
+      aria-label="Precision engineered"
+      className="relative flex min-h-screen w-full items-center overflow-hidden bg-[#0a0a0a]"
+    >
+      {/* backdrop: looping video on larger screens, soft gold glow elsewhere */}
+      {!reduced && (
         <video
-          ref={videoRef}
           src="/clippers.mp4"
           muted
+          loop
           playsInline
-          preload="auto"
+          autoPlay
+          preload="metadata"
           aria-hidden="true"
-          onLoadedMetadata={() => setVideoReady(true)}
-          className="absolute inset-0 h-full w-full object-cover opacity-50"
+          className="absolute inset-0 hidden h-full w-full object-cover opacity-40 md:block"
         />
-      ) : (
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_40%,rgba(212,175,55,0.18),transparent_60%)]" />
       )}
-
-      {/* 2. Gradient overlays to keep text and the model readable */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_45%,rgba(212,175,55,0.16),transparent_60%)]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
 
-      {/* 3. 3D canvas */}
-      <ClipperScene ref={groupRef} onReady={onReady} onUnavailable={onUnavailable} />
-
-      {/* 4. Headline */}
-      <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-start px-6 pt-24 md:justify-center md:px-24 md:pt-0">
-        <div className="max-w-xl text-center md:text-left">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-8 px-6 pb-12 pt-28 md:grid-cols-2 md:px-12 md:py-0">
+        {/* left: text */}
+        <div className="text-center md:text-left">
           <h2 className="text-5xl font-black uppercase leading-none tracking-tighter text-white md:text-8xl">
             Precision<br />
             <span className="text-[#facc15]">Engineered</span>
@@ -137,7 +91,29 @@ export default function ClipperBreakdown() {
             Experience the absolute best grooming in Tracy, California. Dissecting the details of a perfect cut.
           </p>
         </div>
+
+        {/* right: orbiting clipper */}
+        <div className="flex justify-center md:justify-end" style={{ perspective: 1400 }}>
+          <motion.div
+            className="relative"
+            style={{ height: 'min(72vh, 640px)', aspectRatio: STAGE_ASPECT, transformStyle: 'preserve-3d' }}
+            animate={run ? { rotateY: [-24, 24, -24], x: orbit(14, 0).x, y: orbit(14, 0).y } : { rotateY: 0, x: 0, y: 0 }}
+            transition={
+              run
+                ? {
+                    rotateY: { repeat: Infinity, ease: 'easeInOut', duration: 18 },
+                    x: { repeat: Infinity, ease: 'linear', duration: 26 },
+                    y: { repeat: Infinity, ease: 'linear', duration: 26 },
+                  }
+                : { duration: 0.6 }
+            }
+          >
+            {clipperParts.map((_, i) => (
+              <Part key={clipperParts[i].id} i={i} run={run} />
+            ))}
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

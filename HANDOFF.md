@@ -1,242 +1,141 @@
-This is incredible progress! The fact that you can see the 3D placeholder parts separating and animating on scroll means the hardest part—the WebGL architecture and GSAP scroll synchronization—is fully operational. 
+Here is the comprehensive handoff document detailing the remaining tasks, production preparation, and known issues for the Golden State Barbershop 3D Immersive Redesign.
 
-Here is the comprehensive handoff document for the project. You can copy and paste this into a `HANDOFF_3D.md` file in your repository.
+You can copy and paste the text below directly into a file named `HANDOFF_PRODUCTION.md` in your project root.
 
 ***
 
-# 🏗️ Handoff Document: Golden State Barbershop 3D Immersive Redesign
+# 🏗️ Handoff: Golden State Barbershop Production Prep & Final Polish
 
 ## 🔗 Project Links
-*   **Live Preview Site:** [https://golden-state-barbershop-preview.pages.dev/](https://golden-state-barbershop-preview.pages.dev/)
 *   **GitHub Repository:** [https://github.com/o87enterprises-ai/golden-state-barbershop](https://github.com/o87enterprises-ai/golden-state-barbershop)
 *   **Local Directory:** `C:\Users\there\o87DevMobile\Specs\GoldenGate`
 
----
-
-## 📂 Current Directory Tree (Relevant Files)
-```text
-GoldenGate/
-├── app/
-│   ├── page.tsx                 # Main landing page (Needs integration)
-│   ├── test-3d/
-│   │   └── page.tsx             # Dedicated 3D testing route
-│   └── layout.tsx
-├── components/
-│   ├── 3d/
-│   │   └── ClipperScene.tsx     # The React Three Fiber Canvas
-│   └── ClipperBreakdown.tsx     # The GSAP ScrollTrigger Orchestrator
-├── package.json                 # Updated with 3D dependencies
-└── pnpm-lock.yaml / package-lock.json
-```
+## ✅ Current State (Completed)
+1.  **Unified Scroll Experience:** Merged `ScrollVideo.tsx` into `ClipperBreakdown.tsx`. The background video now scrubs perfectly in sync with the GSAP timeline that dissects and orbits the 3D clipper model.
+2.  **Graceful Degradation:** Added `WebGLFallback.tsx`. If a user's browser blocks WebGL (like the current Firefox setup), the page no longer crashes and the `<Hero />` section remains intact.
+3.  **Build Stability:** Resolved severe Node.js OOM (Out of Memory) crashes by switching dev server to Webpack (`next dev --webpack`), pinning Turbopack's root, and increasing Node memory limits via `cross-env`.
+4.  **Layout:** The bold "PRECISION ENGINEERED" text overlays the left side, while the placeholder 3D model renders on the right over the video background.
 
 ---
 
-## ✅ Work Completed
-1.  **Installed 3D Stack:** Added `three`, `@react-three/fiber`, `@react-three/drei`, and `gsap` to the project.
-2.  **Created `ClipperScene.tsx`:** Built a Client-Side rendered WebGL canvas using placeholder geometry (boxes, cylinders, torus) to represent the clipper parts.
-3.  **Created `ClipperBreakdown.tsx`:** Implemented a GSAP `ScrollTrigger` timeline that pins the canvas to the screen and scrubs a 3-phase animation (Dissection → Camera Tilt → Orbital Orbit).
-4.  **Fixed SSR Issues:** Utilized Next.js `dynamic` imports with `ssr: false` to prevent server-side rendering crashes with Three.js.
-5.  **Fixed Canvas Hangs:** Removed the heavy `<Environment>` component (which was causing the canvas to stay black while downloading HDRI maps) and replaced it with localized directional and point lighting.
-6.  **Created Test Route:** Added `app/test-3d/page.tsx` to isolate the 3D experience for testing.
+## ⏭️ Task 1: Replace Placeholder Geometry with Real `.glb` Model
+Currently, the 3D scene uses primitive shapes (`boxGeometry`, `cylinderGeometry`). You must swap these for the final artist-provided model.
 
----
+### Instructions:
+1.  Place the final model file at `C:\Users\there\o87DevMobile\Specs\GoldenGate\public\clipper.glb`.
+2.  Open `C:\Users\there\o87DevMobile\Specs\GoldenGate\components\3d\ClipperScene.tsx`.
+3.  Replace the primitive meshes with the `useGLTF` loader. Ensure the 3D artist named the individual parts `Blade`, `Motor`, and `Coil` in Blender to make targeting them easier.
 
-## ⏭️ Changes Still Needed
-1.  **Integrate into Main Page:** Replace the old 2D "Precision Engineered" section in `app/page.tsx` with the new `<ClipperBreakdown />` component.
-2.  **Replace Placeholders with Real Model:** Swap the `<boxGeometry>` and `<cylinderGeometry>` tags in `ClipperScene.tsx` with a `useGLTF` loader pointing to a real `.glb` clipper model.
-3.  **Responsive Adjustments:** Adjust the `x` position of the 3D group and the layout of the text for mobile screens.
-4.  **Performance/Accessibility:** Add a `prefers-reduced-motion` fallback to show a static image instead of the 3D scene for users who need it.
-
----
-
-## 🛠️ Full File Contents (Current Working State)
-
-### 1. `components/3d/ClipperScene.tsx`
+**Required `ClipperScene.tsx` changes:**
 ```tsx
-'use client';
+import { useGLTF } from '@react-three/drei';
+useGLTF.preload('/clipper.glb');
 
-import { Canvas } from '@react-three/fiber';
-import { forwardRef } from 'react';
-import * as THREE from 'three';
-
-export const ClipperScene = forwardRef<THREE.Group>((props, ref) => {
-  return (
-    <div className="w-full h-full absolute inset-0 z-0">
-      <Canvas camera={{ position: [0, 0, 10], fov: 45 }} gl={{ alpha: true, antialias: true }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={2} color="#ffffff" />
-        <pointLight position={[-10, 5, -5]} intensity={3} color="#facc15" /> {/* Gold Rim */}
-        <pointLight position={[5, -5, -5]} intensity={2} color="#dc2626" /> {/* Red Rim */}
-        
-        <group ref={ref} position={[3.5, 0, 0]}>
-          {/* Placeholder: Top Blade */}
-          <mesh position={[0, 1.5, 0]}>
-            <boxGeometry args={[1, 0.2, 4]} />
-            <meshStandardMaterial color="#d4d4d8" metalness={1} roughness={0.1} />
-          </mesh>
-
-          {/* Placeholder: Motor Body */}
-          <mesh position={[0, 0, 0]}>
-            <cylinderGeometry args={[0.8, 0.8, 3, 32]} />
-            <meshStandardMaterial color="#18181b" metalness={0.8} roughness={0.4} />
-          </mesh>
-
-          {/* Placeholder: Copper Coil */}
-          <mesh position={[0, -1.5, 0]}>
-            <torusGeometry args={[0.6, 0.2, 16, 32]} />
-            <meshStandardMaterial color="#b87333" metalness={1} roughness={0.2} />
-          </mesh>
-        </group>
-      </Canvas>
-    </div>
-  );
-});
-
-ClipperScene.displayName = 'ClipperScene';
-```
-
-### 2. `components/ClipperBreakdown.tsx`
-```tsx
-'use client';
-
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import * as THREE from 'three';
-import dynamic from 'next/dynamic';
-
-const ClipperScene = dynamic(
-  () => import('./3d/ClipperScene').then((mod) => mod.ClipperScene),
-  { 
-    ssr: false,
-    loading: () => <div className="absolute inset-0 flex items-center justify-center text-white z-0">Loading 3D Scene...</div>
-  }
-);
-
-gsap.registerPlugin(ScrollTrigger);
-
-export default function ClipperBreakdown() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const groupRef = useRef<THREE.Group>(null);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!containerRef.current || !groupRef.current) return;
-
-      const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: 'top top',
-            end: '+=3000',
-            scrub: 1.2,
-            pin: true,
-          },
-        });
-
-        const parts = groupRef.current.children;
-
-        // Phase 1: Dissection
-        tl.to(parts[0].position, { y: 4, z: -2, rotation: 0.5, duration: 1 }, 0)
-          .to(parts[1].position, { y: 0, z: 0, duration: 1 }, 0)
-          .to(parts[2].position, { y: -4, z: 2, rotation: 1, duration: 1 }, 0)
-          // Phase 2: Camera Tilt
-          .to(groupRef.current.rotation, { x: 0.6, y: -0.4, duration: 1 }, 1)
-          // Phase 3: Orbital Orbit
-          .to(groupRef.current.rotation, { y: Math.PI * 2, duration: 2, ease: "none" }, 2)
-          .to(parts[2].position, { x: 3, y: 0, z: 3, rotation: Math.PI * 2, duration: 2, ease: "power1.inOut" }, 2);
-
-      }, containerRef);
-
-      return () => ctx.revert();
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  return (
-    <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-[#0a0a0a]">
-      <ClipperScene ref={groupRef} />
-
-      <div className="relative z-10 h-full w-full pointer-events-none flex flex-col justify-center px-8 md:px-24">
-        <div className="max-w-xl">
-          <div className="section-text">
-            <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase leading-none">
-              Precision<br />
-              <span className="text-[#facc15]">Engineered</span>
-            </h1>
-            <p className="mt-6 text-xl text-gray-400 max-w-md">
-              Experience the absolute best grooming in Tracy, California. Dissecting the details of a perfect cut.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-### 3. `app/test-3d/page.tsx`
-```tsx
-import ClipperBreakdown from '@/components/ClipperBreakdown';
-
-export default function Test3DPage() {
-  return (
-    <main className="w-full bg-[#0a0a0a] min-h-screen">
-      <ClipperBreakdown />
-    </main>
-  );
-}
-```
-
----
-
-## 🚀 Instructions for Next Steps
-
-### Task 1: Integrate into Main Page (`app/page.tsx`)
-To replace the old "Precision Engineered" image section with the 3D component:
-1. Open `app/page.tsx`.
-2. Look for the `<section>` that contains the text "PRECISION ENGINEERED".
-3. Replace that entire `<section>` with `<ClipperBreakdown />`.
-4. Make sure to import it at the top of the file: `import ClipperBreakdown from '@/components/ClipperBreakdown';`
-
-### Task 2: How to swap in the real `.glb` model
-When your 3D artist provides the `.glb` file:
-1. Place `clipper.glb` in the `public/` folder.
-2. In `ClipperScene.tsx`, import `useGLTF` from `@react-three/drei`.
-3. Replace the placeholder `<mesh>` tags with:
-```tsx
+// Inside the component:
 const { scene } = useGLTF('/clipper.glb');
-// Inside the group:
+// Replace the three <mesh> tags with:
 <primitive object={scene} />
 ```
-4. Update the GSAP timeline in `ClipperBreakdown.tsx` to target the specific child meshes of the loaded model (e.g., `scene.getObjectByName('Blade')`).
+
+4.  Open `C:\Users\there\o87DevMobile\Specs\GoldenGate\components\ClipperBreakdown.tsx`.
+5.  Update the GSAP timeline. You can no longer rely on array indexes (`parts[0]`). You must target the named nodes.
+```tsx
+const blade = group.getObjectByName('Blade');
+const motor = group.getObjectByName('Motor');
+const coil = group.getObjectByName('Coil');
+if (!blade || !motor || !coil) return;
+
+// Update the GSAP timeline to target blade.position, motor.rotation, etc.
+```
 
 ---
 
-## 🐙 Git Commit & Push Commands
+## ⏭️ Task 2: Video Optimization (Critical for Production)
+Scrubbing a standard `.mp4` via GSAP (`currentTime`) is notoriously laggy on mobile devices and Safari. The browser has to decode video frames on the fly, which causes massive frame drops.
 
-To commit these changes and create a pull request, run the following commands in your terminal:
+### Instructions:
+1.  **Compress the Video:** Ensure `/clippers.mp4` is compressed using H.264 (or better, WebM/VP9) and is no larger than 5MB. Ideally, remove the audio track entirely using a tool like Handbrake.
+2.  **Mobile Fallback (Optional but recommended):** On mobile devices (under 768px), consider disabling the video scrub. Instead of scrubbing, let the video play normally, or replace the video background with a static high-res image to save battery and prevent crashes.
+3.  **Image Sequence Alternative:** If scrubbing the MP4 still stutters on high-end devices, convert the video into an image sequence (e.g., 60 JPEGs) and preload them. You can then swap the background image `src` based on the GSAP scroll progress.
 
-**1. Create a new branch for the feature:**
-```powershell
-git checkout -b feature/3d-immersive-scroll
+---
+
+## ⏭️ Task 3: Responsive Design Adjustments
+The current layout places the 3D model on the right, but on mobile screens (320px - 425px), the model will likely clip off the screen or overlap with the text.
+
+### Instructions:
+1.  Open `C:\Users\there\o87DevMobile\Specs\GoldenGate\components\ClipperBreakdown.tsx`.
+2.  Adjust the text container. On mobile, center the text and push it to the top or bottom.
+```tsx
+// Change the text container classes to:
+<div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-start pt-24 md:justify-center px-6 md:px-24">
+```
+3.  Open `C:\Users\there\o87DevMobile\Specs\GoldenGate\components\3d\ClipperScene.tsx`.
+4.  Adjust the `ResponsiveGroup` X-position. On mobile, you want the model centered (`x = 0`), but on desktop, offset to the right.
+```tsx
+// Update the x calculation:
+const x = viewport.width < 5 ? 0 : Math.min(viewport.width * 0.3, 3.5);
 ```
 
-**2. Stage all new files and changes:**
+---
+
+## ⏭️ Task 4: WebGL & Firefox Compatibility
+During testing, Firefox threw a `WebGL context could not be created` error, which halted React hydration and caused the `<Hero />` to vanish.
+
+### Current Status:
+We added `components/3d/WebGLFallback.tsx`. If WebGL fails, it catches the error and displays a static message ("Hardware Acceleration Required") so the rest of the site works perfectly.
+
+### Remaining Actions:
+1.  **Test on Real Devices:** Open the site on an iPhone and an Android device to ensure the 3D scene loads or falls back gracefully.
+2.  **Check `prefers-reduced-motion`:** In `ClipperBreakdown.tsx`, ensure the `gsap.matchMedia` block is working. If a user has reduced motion enabled in their OS, the 3D model should remain static, the video should not scrub, and the section should not pin.
+3.  **Document the Firefox Issue:** If clients report they can't see the 3D model in Firefox, advise them to check `about:support` -> Graphics. If it says `Blocked`, they need to update their graphics drivers.
+
+---
+
+## ⏭️ Task 5: Pre-Flight Checks & Production Deployment
+Before merging to `main` and deploying to Cloudflare Pages or Vercel, run through this checklist.
+
+### 1. Fix Missing Image `sizes` Prop
+The console currently warns about `Image with src "/logo.png" has "fill" but is missing "sizes" prop`. This hurts Lighthouse performance scores.
+*   Open `C:\Users\there\o87DevMobile\Specs\GoldenGate\components\Hero.tsx` (or wherever the logo is).
+*   Add a `sizes` prop to the `<Image />` component: `sizes="(max-width: 768px) 100vw, 50vw"`.
+
+### 2. Clean Up Lockfiles
+You currently have `package-lock.json` from an earlier NPM install, but you are using `pnpm`.
+*   Run: `Remove-Item C:\Users\there\o87DevMobile\Specs\GoldenGate\package-lock.json`
+
+### 3. Ensure Environment Variables are Set
+Since the project uses Prisma and Stripe, ensure the production environment variables are set in your hosting provider's dashboard (Cloudflare/Vercel):
+*   `DATABASE_URL`
+*   `STRIPE_SECRET_KEY`
+*   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+### 4. Run a Production Build Locally
+Run the build command locally to catch any TypeScript errors that Webpack development mode ignores. Because `build` uses Turbopack (which crashed before), we need to verify it works with the new memory settings.
 ```powershell
+cd C:\Users\there\o87DevMobile\Specs\GoldenGate
+pnpm build
+```
+
+---
+
+## 🚀 Final Git Commit & Push Sequence
+Once all tasks above are completed and `pnpm build` succeeds, run the following to deploy:
+
+```powershell
+cd C:\Users\there\o87DevMobile\Specs\GoldenGate
+
+# 1. Ensure you are on the feature branch
+git checkout feature/3d-immersive-scroll
+
+# 2. Stage all changes
 git add .
+
+# 3. Commit the final production-ready code
+git commit -m "feat: finalize 3D asset integration, responsive layouts, and production optimizations"
+
+# 4. Push to GitHub
+git push origin feature/3d-immersive-scroll
 ```
 
-**3. Commit the changes:**
-```powershell
-git commit -m "feat(web): implement 3D WebGL scroll experience with GSAP and R3F"
-```
-
-**4. Push the branch to GitHub:**
-```powershell
-git push -u origin feature/3d-immersive-scroll
-```
-
-**5. Merge:**
-Once the branch is pushed, go to your GitHub repository in your browser. You will see a prompt to **"Compare & pull request"**. Click it, review the changes, and click **"Create pull request"**. Once the checks pass, click **"Merge pull request"** to merge it into your `master` or `main` branch.
+Once pushed, go to GitHub and merge the Pull Request into `main`. Your Cloudflare Pages integration should automatically trigger a production deploy.

@@ -28,18 +28,18 @@ type Orbiter = {
 
 const ORBITERS: Orbiter[] = [
   // medium pieces
-  { id: 'grip', size: 0.2, rx: 0.5, flat: 0.34, phi: -14, speed: 7, start: 20, spin: 9, layer: 0.9 },
-  { id: 'core', size: 0.17, rx: 0.62, flat: 0.5, phi: 24, speed: -5, start: 150, spin: -12, layer: 0.7 },
-  { id: 'blade', size: 0.22, rx: 0.42, flat: 0.28, phi: 6, speed: -9, start: 250, spin: 14, layer: 1 },
-  { id: 'half-l', size: 0.13, rx: 0.72, flat: 0.42, phi: -32, speed: 4, start: 80, spin: -8, layer: 0.5 },
-  { id: 'cap', size: 0.15, rx: 0.56, flat: 0.62, phi: 40, speed: 6, start: 310, spin: 16, layer: 0.6 },
+  { id: 'grip', size: 0.075, rx: 0.5, flat: 0.34, phi: -14, speed: 7, start: 20, spin: 9, layer: 0.9 },
+  { id: 'core', size: 0.07, rx: 0.62, flat: 0.5, phi: 24, speed: -5, start: 150, spin: -12, layer: 0.7 },
+  { id: 'blade', size: 0.095, rx: 0.42, flat: 0.28, phi: 6, speed: -9, start: 250, spin: 14, layer: 1 },
+  { id: 'half-l', size: 0.05, rx: 0.72, flat: 0.42, phi: -32, speed: 4, start: 80, spin: -8, layer: 0.5 },
+  { id: 'cap', size: 0.055, rx: 0.56, flat: 0.62, phi: 40, speed: 6, start: 310, spin: 16, layer: 0.6 },
   // small pieces
-  { id: 'rod', size: 0.17, rx: 0.8, flat: 0.3, phi: 12, speed: -3.5, start: 200, spin: 18, layer: 0.25 },
-  { id: 'screw-tl', size: 0.07, rx: 0.36, flat: 0.55, phi: -50, speed: 13, start: 60, spin: 90, layer: 1 },
-  { id: 'screw-r', size: 0.06, rx: 0.66, flat: 0.7, phi: 70, speed: -11, start: 330, spin: -120, layer: 0.8 },
-  { id: 'trim-l', size: 0.15, rx: 0.88, flat: 0.4, phi: -20, speed: 3, start: 120, spin: 10, layer: 0.2 },
-  { id: 'screw-l', size: 0.055, rx: 0.5, flat: 0.8, phi: 20, speed: -15, start: 10, spin: 150, layer: 0.95 },
-  { id: 'trim-r', size: 0.12, rx: 0.76, flat: 0.55, phi: 55, speed: -4.5, start: 280, spin: -14, layer: 0.35 },
+  { id: 'rod', size: 0.07, rx: 0.8, flat: 0.3, phi: 12, speed: -3.5, start: 200, spin: 18, layer: 0.25 },
+  { id: 'screw-tl', size: 0.03, rx: 0.36, flat: 0.55, phi: -50, speed: 13, start: 60, spin: 90, layer: 1 },
+  { id: 'screw-r', size: 0.026, rx: 0.66, flat: 0.7, phi: 70, speed: -11, start: 330, spin: -120, layer: 0.8 },
+  { id: 'trim-l', size: 0.06, rx: 0.88, flat: 0.4, phi: -20, speed: 3, start: 120, spin: 10, layer: 0.2 },
+  { id: 'screw-l', size: 0.024, rx: 0.5, flat: 0.8, phi: 20, speed: -15, start: 10, spin: 150, layer: 0.95 },
+  { id: 'trim-r', size: 0.05, rx: 0.76, flat: 0.55, phi: 55, speed: -4.5, start: 280, spin: -14, layer: 0.35 },
 ];
 
 const partById = (id: string) => clipperParts.find((p) => p.id === id)!;
@@ -169,7 +169,7 @@ export default function ClipperBreakdown() {
             <div
               ref={planeRef}
               className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
-              style={{ height: '78%', aspectRatio: '370 / 760', transformStyle: 'preserve-3d', willChange: 'transform' }}
+              style={{ height: '86%', aspectRatio: '370 / 760', transformStyle: 'preserve-3d', willChange: 'transform' }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -199,7 +199,7 @@ export default function ClipperBreakdown() {
                     alt=""
                     aria-hidden="true"
                     draggable={false}
-                    className="h-full w-full select-none object-contain drop-shadow-[0_8px_12px_rgba(0,0,0,0.6)]"
+                    className="h-full w-full select-none object-contain drop-shadow-[0_3px_5px_rgba(0,0,0,0.6)]"
                   />
                 </div>
               );

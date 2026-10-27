@@ -1,5 +1,5 @@
 import Hero from "@/components/Hero";
-import ScrollExplode from "@/components/ScrollExplode";
+import ClipperBreakdown from "@/components/ClipperBreakdown";
 import LiveLineup from "@/components/LiveLineup";
 import LineupCalendar from "@/components/LineupCalendar";
 import Services from "@/components/Services";
@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-brand-dark">
       <Hero />
-      <ScrollExplode />
+      <ClipperBreakdown />
       <LiveLineup />
       <LineupCalendar />
       <Services />
@@ -17,3 +17,4 @@ export default function Home() {
     </main>
   );
 }
+

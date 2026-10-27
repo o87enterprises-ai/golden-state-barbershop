@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 import { brand } from "./branding";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Created on first use so builds don't need the key.
+let client: Resend | null = null;
+const getResend = () => (client ??= new Resend(process.env.RESEND_API_KEY));
 const FROM = process.env.RECEIPT_FROM_EMAIL ?? `${brand.name} <hello@example.com>`;
 
 export async function sendReceipt(opts: {
@@ -15,7 +17,7 @@ export async function sendReceipt(opts: {
     style: "currency",
     currency: "USD",
   });
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: opts.to,
     subject: `Your ${brand.name} receipt`,
@@ -37,7 +39,7 @@ export async function sendReviewRequest(opts: {
   customerName: string;
 }) {
   const reviewUrl = process.env.GOOGLE_REVIEW_URL ?? "#";
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: opts.to,
     subject: `How was your cut at ${brand.name}?`,

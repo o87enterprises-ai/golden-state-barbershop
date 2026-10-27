@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarPlus,
@@ -12,7 +12,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  LogOut,
 } from "lucide-react";
+import RequireRole from "@/components/auth/RequireRole";
+import { useAuth } from "@/lib/auth/AuthStore";
 
 type Leaf = { label: string; href: string };
 type Item =
@@ -39,8 +42,10 @@ const NAV: Item[] = [
   },
 ];
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+function PortalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
@@ -63,9 +68,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   };
 
   return (
-    <div className="flex min-h-screen bg-brand-dark pt-[86px]">
+    <div className="flex min-h-screen bg-brand-dark pt-[var(--chrome-h)]">
       <aside
-        className={`sticky top-[86px] h-[calc(100vh-86px)] shrink-0 border-r border-brand-gold/15 bg-brand-charcoal transition-[width] duration-300 ${
+        className={`sticky top-[var(--chrome-h)] h-[calc(100vh-var(--chrome-h))] shrink-0 border-r border-brand-gold/15 bg-brand-charcoal transition-[width] duration-300 ${
           collapsed ? "w-16" : "w-60"
         }`}
       >
@@ -162,9 +167,31 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             );
           })}
         </nav>
+        <div className="absolute inset-x-0 bottom-0 border-t border-white/10 p-3">
+          {!collapsed && <p className="truncate px-3 pb-1 font-sans text-xs text-white/40">{user?.name}</p>}
+          <button
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+            title="Log out"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 font-sans text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <LogOut size={18} className="shrink-0" />
+            {!collapsed && <span>Log out</span>}
+          </button>
+        </div>
       </aside>
 
       <main className="min-w-0 flex-1 px-6 py-10">{children}</main>
     </div>
+  );
+}
+
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireRole roles={["customer"]}>
+      <PortalShell>{children}</PortalShell>
+    </RequireRole>
   );
 }

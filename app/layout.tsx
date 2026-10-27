@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Bebas_Neue } from "next/font/google";
 import "./globals.css";
-import SmoothScroll from "@/components/SmoothScroll";
 import NdaGate from "@/components/NdaGate";
-import PreviewBadge from "@/components/PreviewBadge";
+import AuthStore from "@/lib/auth/AuthStore";
 import DemoStore from "@/lib/mock/DemoStore";
-import DemoBanner from "@/components/shell/DemoBanner";
-import MegaNav from "@/components/shell/MegaNav";
-import OverlayHost from "@/components/shell/OverlayHost";
-import Toaster from "@/components/shell/Toaster";
+import SiteChrome from "@/components/shell/SiteChrome";
+import { PREVIEW_MODE } from "@/lib/config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,11 +18,26 @@ const bebas = Bebas_Neue({
   variable: "--font-bebas",
 });
 
+const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://goldenstatebarbershop.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(site),
   title: "Golden State Barbershop | Tracy, CA",
   description: "Premium cuts, classic style. Experience the best barbershop in Tracy, California.",
-  // Confidential preview — keep it out of search engines.
-  robots: { index: false, follow: false },
+  openGraph: {
+    title: "Golden State Barbershop | Tracy, CA",
+    description: "Premium cuts, classic style. Book online — pay up front, skip the wait.",
+    type: "website",
+    siteName: "Golden State Barbershop",
+  },
+  // Only confidential preview deploys stay out of search engines.
+  robots: PREVIEW_MODE ? { index: false, follow: false } : { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -33,19 +45,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const chrome = <SiteChrome>{children}</SiteChrome>;
+
   return (
     <html lang="en" className={`${inter.variable} ${bebas.variable} antialiased`}>
-      <body className="bg-brand-dark text-white selection:bg-brand-gold selection:text-black">
-        <DemoStore>
-          <NdaGate>
-            <DemoBanner />
-            <MegaNav />
-            <SmoothScroll>{children}</SmoothScroll>
-            <PreviewBadge />
-            <OverlayHost />
-            <Toaster />
-          </NdaGate>
-        </DemoStore>
+      <body
+        data-preview={PREVIEW_MODE ? "" : undefined}
+        className="bg-brand-dark text-white selection:bg-brand-gold selection:text-black"
+      >
+        <AuthStore>
+          <DemoStore>{PREVIEW_MODE ? <NdaGate>{chrome}</NdaGate> : chrome}</DemoStore>
+        </AuthStore>
       </body>
     </html>
   );

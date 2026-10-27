@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { PREVIEW_MODE } from "@/lib/config";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
 import { OWNER, NDA_VERSION, ndaClauses } from "@/lib/legal";
 
 export default function NdaPage() {
+  if (!PREVIEW_MODE) notFound();
   return (
     <main className="min-h-screen bg-brand-dark">
       <section className="mx-auto max-w-3xl px-6 pb-24 pt-36">

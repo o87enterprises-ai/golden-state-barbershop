@@ -1,21 +1,33 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Radio, Clock, Scissors } from "lucide-react";
+import { Armchair } from "lucide-react";
 import { useDemo } from "@/lib/mock/DemoStore";
-import { barberById } from "@/lib/mock/data";
 
+// Public floor status. Walk-in names never appear here and incognito chairs
+// show only as "Reserved" — no barber, no client.
 export default function LiveLineup() {
-  const { queue, chairs, openOverlay } = useDemo();
+  const { chairs, queue, barberById, hydrated } = useDemo();
+  if (!hydrated) return null;
 
-  const inChair = queue.filter((q) => q.status === "IN_CHAIR");
-  const waiting = queue.filter((q) => q.status === "WAITING");
-  const openSeats = chairs.filter((c) => c.state === "IDLE").length;
+  const open = chairs.filter((c) => c.barberId && !c.incognito && c.state === "IDLE").length;
+  const waiting = queue.filter((q) => q.status === "WAITING").length;
+  const staffed = chairs.filter((c) => c.barberId && !c.incognito).length;
+
+  const status = (c: (typeof chairs)[number]) => {
+    if (!c.barberId) return { label: "Closed", tone: "text-white/30 border-white/10", who: "No barber" };
+    if (c.incognito) return { label: "Reserved", tone: "text-white/50 border-white/20", who: "Private" };
+    const who = barberById(c.barberId)?.name ?? "Barber";
+    if (c.state === "IDLE") return { label: "Open", tone: "text-emerald-400 border-emerald-400/40", who };
+    if (c.state === "ALMOST_READY") return { label: "Almost ready", tone: "text-amber-300 border-amber-400/40", who };
+    return { label: "In service", tone: "text-brand-gold border-brand-gold/40", who };
+  };
 
   return (
-    <section id="live-lineup" className="relative z-20 bg-brand-charcoal py-24">
+    <section id="live-lineup" className="relative z-20 scroll-mt-24 bg-brand-dark py-24">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex items-end justify-between gap-6">
           <div>
             <p className="flex items-center gap-2 font-sans text-xs uppercase tracking-[0.3em] text-brand-gold/60">
               <span className="relative flex h-2 w-2">
@@ -24,76 +36,45 @@ export default function LiveLineup() {
               </span>
               Live Now
             </p>
-            <h2 className="mt-2 font-display text-4xl tracking-widest text-brand-gold md:text-5xl">
-              The Lineup
-            </h2>
+            <h2 className="mt-2 font-display text-4xl tracking-widest text-brand-gold md:text-5xl">The Floor</h2>
           </div>
           <div className="text-right">
-            <p className="font-display text-5xl text-white">{openSeats}</p>
-            <p className="font-sans text-xs uppercase tracking-wider text-white/40">Open seats</p>
+            <p className="font-display text-5xl text-white">{open}</p>
+            <p className="font-sans text-xs uppercase tracking-wider text-white/40">
+              Open {open === 1 ? "chair" : "chairs"}
+            </p>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* in chair */}
-          <div className="rounded-2xl border border-white/10 bg-brand-dark p-6">
-            <h3 className="mb-4 flex items-center gap-2 font-sans text-sm uppercase tracking-wider text-white/50">
-              <Scissors size={16} className="text-brand-gold" /> In the Chair
-            </h3>
-            <div className="space-y-3">
-              {inChair.length === 0 && <p className="text-sm text-white/40">All chairs open.</p>}
-              {inChair.map((q) => (
-                <motion.div
-                  key={q.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between rounded-lg bg-brand-charcoal px-4 py-3"
-                >
-                  <span className="font-sans text-sm text-white">{q.name}</span>
-                  <span className="font-sans text-xs text-brand-gold">
-                    with {barberById(q.barberId)?.name}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* waiting */}
-          <div className="rounded-2xl border border-white/10 bg-brand-dark p-6">
-            <h3 className="mb-4 flex items-center gap-2 font-sans text-sm uppercase tracking-wider text-white/50">
-              <Clock size={16} className="text-brand-gold" /> Waiting
-            </h3>
-            <div className="space-y-3">
-              {waiting.length === 0 && <p className="text-sm text-white/40">No wait — walk right in.</p>}
-              {waiting.map((q, i) => (
-                <motion.div
-                  key={q.id}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between rounded-lg bg-brand-charcoal px-4 py-3"
-                >
-                  <span className="flex items-center gap-3 font-sans text-sm text-white">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-gold/20 text-xs text-brand-gold">
-                      {i + 1}
-                    </span>
-                    {q.name}
-                  </span>
-                  <span className="font-sans text-xs text-white/50">~{q.estimatedWait}m</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {chairs.map((c, i) => {
+            const s = status(c);
+            return (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="rounded-2xl border border-white/10 bg-brand-charcoal p-5"
+              >
+                <div className="flex items-center justify-between">
+                  <Armchair size={20} className="text-brand-gold/60" aria-hidden="true" />
+                  <span className={`rounded-full border px-2 py-0.5 font-sans text-[10px] uppercase tracking-wider ${s.tone}`}>{s.label}</span>
+                </div>
+                <p className="mt-4 font-display text-xl tracking-wider text-white">{c.name}</p>
+                <p className="font-sans text-sm text-white/50">{s.who}</p>
+              </motion.div>
+            );
+          })}
         </div>
 
-        <div className="mt-10 flex items-center justify-center gap-4">
-          <button
-            onClick={() => openOverlay({ type: "book" })}
-            className="rounded-sm bg-brand-red px-10 py-4 font-display text-2xl tracking-widest text-white transition-all hover:scale-105 hover:bg-red-700"
-          >
-            Get in Line
-          </button>
-          <span className="flex items-center gap-2 font-sans text-xs uppercase tracking-widest text-white/30">
-            <Radio size={14} /> updates live across tabs
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+          <Link href="/book" className="rounded-sm bg-brand-red px-10 py-4 font-display text-2xl tracking-widest text-white transition-all hover:scale-105 hover:bg-red-700">
+            Book a Cut
+          </Link>
+          <span className="font-sans text-xs uppercase tracking-widest text-white/40">
+            {staffed === 0 ? "Chairs open when barbers clock in" : waiting === 0 ? "No wait right now" : `${waiting} waiting`}
           </span>
         </div>
       </div>

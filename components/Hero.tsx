@@ -75,6 +75,7 @@ export default function Hero() {
               src="/logo.png" 
               alt="Golden State Barbershop Logo"
               fill
+              sizes="(max-width: 768px) 300px, 500px"
               className="object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.8)]"
               priority
             />

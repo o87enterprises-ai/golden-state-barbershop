@@ -1,5 +1,11 @@
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-09-30.clover",
+// Created on first use so builds don't need STRIPE_SECRET_KEY.
+let client: Stripe | null = null;
+
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    client ??= new Stripe(process.env.STRIPE_SECRET_KEY!);
+    return Reflect.get(client, prop);
+  },
 });

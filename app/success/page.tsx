@@ -6,6 +6,9 @@ import Link from "next/link";
 import { Check, Star } from "lucide-react";
 import Footer from "@/components/Footer";
 import { brand } from "@/lib/branding";
+import { PAYMENTS_SIMULATED } from "@/lib/config";
+
+const REVIEW_URL = process.env.NEXT_PUBLIC_GOOGLE_REVIEW_URL;
 
 export default function SuccessPage() {
   const [type, setType] = useState<"booking" | "shop" | "tap">("booking");
@@ -19,12 +22,12 @@ export default function SuccessPage() {
   const copy = {
     booking: {
       title: "You're Booked",
-      body: "Your appointment is confirmed. A confirmation has been sent to your email.",
+      body: "Your appointment is confirmed and paid. Find it any time under your account, or just show up and give your name.",
       primary: { href: "/book", label: "Book Again" },
     },
     shop: {
       title: "Order Placed",
-      body: "Thank you! A shipping confirmation has been sent to your email.",
+      body: "Thank you for your order!",
       primary: { href: "/shop", label: "Back to Shop" },
     },
     tap: {
@@ -64,6 +67,7 @@ export default function SuccessPage() {
         </motion.p>
 
         {/* Google review prompt */}
+        {REVIEW_URL && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -82,12 +86,15 @@ export default function SuccessPage() {
             A quick review means the world to a local shop.
           </p>
           <a
-            href="#"
+            href={REVIEW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-4 inline-block rounded-sm bg-brand-gold px-8 py-3 font-display text-lg tracking-widest text-black transition-all hover:bg-brand-gold/90"
           >
             Leave a Google Review
           </a>
         </motion.div>
+        )}
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
@@ -106,9 +113,11 @@ export default function SuccessPage() {
           </a>
         </div>
 
-        <p className="mt-10 font-sans text-xs uppercase tracking-widest text-white/30">
-          Mock confirmation · demo only
-        </p>
+        {PAYMENTS_SIMULATED && (
+          <p className="mt-10 font-sans text-xs uppercase tracking-widest text-white/30">
+            Payment was simulated · no real charge
+          </p>
+        )}
       </section>
 
       <Footer />

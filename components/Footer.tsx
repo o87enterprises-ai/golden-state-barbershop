@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPin, Phone, Clock } from "lucide-react";
 import { brand, fullAddress, telHref, mapsHref } from "@/lib/branding";
+import { PREVIEW_MODE } from "@/lib/config";
 
 // Lucide 1.x removed brand icons — inline SVG instead.
 function InstagramIcon({ size = 18 }: { size?: number }) {
@@ -162,16 +163,28 @@ export default function Footer() {
       <div className="border-t border-white/5">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 font-sans text-xs text-white/40 sm:flex-row">
           <p className="text-center sm:text-left">
-            © {new Date().getFullYear()} {brand.name}. This preview is the property
-            of <span className="text-white/60">o87 Enterprises</span> until a
-            service agreement is signed.
+            © {new Date().getFullYear()} {brand.name}.
+            {PREVIEW_MODE && (
+              <>
+                {" "}This preview is the property of{" "}
+                <span className="text-white/60">o87 Enterprises</span> until a
+                service agreement is signed.
+              </>
+            )}
           </p>
-          <Link
-            href="/nda"
-            className="whitespace-nowrap text-white/50 underline-offset-4 transition-colors hover:text-brand-gold hover:underline"
-          >
-            Non-Use Agreement
-          </Link>
+          {PREVIEW_MODE ? (
+            <Link
+              href="/nda"
+              className="whitespace-nowrap text-white/50 underline-offset-4 transition-colors hover:text-brand-gold hover:underline"
+            >
+              Non-Use Agreement
+            </Link>
+          ) : (
+            <nav aria-label="Footer" className="flex gap-5">
+              <Link href="/login" className="text-white/50 underline-offset-4 transition-colors hover:text-brand-gold hover:underline">Log in</Link>
+              <Link href="/signup?role=barber" className="text-white/50 underline-offset-4 transition-colors hover:text-brand-gold hover:underline">Barber sign-up</Link>
+            </nav>
+          )}
         </div>
       </div>
     </footer>

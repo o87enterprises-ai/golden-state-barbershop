@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDemo } from "@/lib/mock/DemoStore";
 import { StyleProfile } from "@/lib/mock/data";
 
@@ -18,10 +18,11 @@ const fields: { key: keyof StyleProfile; label: string; hint: string }[] = [
 export default function StyleProfilePage() {
   const { styleProfile, updateStyleProfile } = useDemo();
   const [draft, setDraft] = useState<StyleProfile>(styleProfile);
+  useEffect(() => setDraft(styleProfile), [styleProfile]);
 
   return (
     <div>
-      <h2 className="mb-2 font-display text-3xl tracking-widest text-brand-gold">Custom Styling Guide</h2>
+      <h1 className="mb-2 font-display text-3xl tracking-widest text-brand-gold">Custom Styling Guide</h1>
       <p className="mb-8 text-sm text-white/50">
         Your barber sees this before every service — so you get the same great cut every time.
       </p>
@@ -57,9 +58,6 @@ export default function StyleProfilePage() {
         >
           Save Profile
         </button>
-        <span className="font-sans text-xs uppercase tracking-widest text-white/30">
-          Reference photos — upload coming in production
-        </span>
       </div>
     </div>
   );

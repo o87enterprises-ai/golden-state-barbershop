@@ -33,3 +33,34 @@ needs a native Tap-to-Pay wrapper — the backend here doesn't change.
 - `lib/branding.ts` → real phone / address / Google Place ID
 - `.env` → `GOOGLE_REVIEW_URL` (from your Google Business Profile)
 - Icons: `public/icon-192.png`, `public/icon-512.png`, `public/logo.png`
+
+## App structure (storefront + staff app)
+| Area | Route | Who |
+|---|---|---|
+| Landing, menu, shop, guest booking | `/`, `/menu`, `/shop`, `/book` | everyone (no account needed to book; payment is required up front) |
+| Log in / sign up / onboarding | `/login`, `/signup`, `/onboarding` | everyone |
+| Customer app | `/portal/*` | customers |
+| Staff app | `/admin/*` | owner (all pages) and barbers (Time Clock, Incognito, Schedule, POS, Queue, Chairs) |
+
+- **Accounts:** the first owner is created at `/signup?role=admin` (only possible until an owner exists). The owner invites barbers with one-time codes (Team page); customers sign up freely. Passwords are salted PBKDF2-SHA256 hashes.
+- **Time clock:** barbers clock in and claim a chair. Public availability (the landing "The Floor", the booking calendar, barber choices) follows who is clocked in at a public chair.
+- **Incognito (ghost chair):** a barber can reserve their chair for private/VIP clients. It shows publicly as "Reserved" with no names, and the barber sets a custom price per private session. Sales roll up to the owner's Revenue page.
+- **Shop:** affiliate links to Amazon (`lib/mock/data.ts` → `products`). No prices are stored because Amazon requires live prices. Set `NEXT_PUBLIC_AMAZON_TAG` to your Associates ID.
+
+## Production notes — read before launch
+The storefront, accounts, time clock, bookings, and POS currently run on a **client-side data layer** (`lib/auth/AuthStore.tsx`, `lib/mock/DemoStore.tsx`) persisted in the browser. That means:
+- Accounts and shop data live **per device**: a booking made on a customer's phone will not appear on the shop's computer. Browser storage is also **not a security boundary**; the route gates (`RequireRole`) are a UX layer, not server enforcement.
+- Card payments are **simulated** (`NEXT_PUBLIC_PAYMENTS_LIVE` unset). No charge is made.
+- Before taking real customers, move these to the server: users + sessions (cookie auth), chairs / time entries / private sessions / sales (Prisma + Postgres), and wire the booking flow to `app/api/checkout` and the Stripe webhook that already exist. The store functions (`signup`, `login`, `clockIn`, `addAppointment`, …) are the seam: swap their bodies for `fetch` calls and the pages don't change.
+
+## Environment flags
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_AMAZON_TAG` | Amazon Associates store ID appended to every product link |
+| `NEXT_PUBLIC_PREVIEW_MODE=1` | Owner-approval previews only: NDA gate, banner, watermark, noindex |
+| `NEXT_PUBLIC_SEED_DEMO=1` | Loads sample barbers/appointments/sales (never in production) |
+| `NEXT_PUBLIC_PAYMENTS_LIVE=1` | Hides the "simulated payment" labels once a processor is connected |
+| `NEXT_PUBLIC_GOOGLE_REVIEW_URL` | Shows the review prompt on the confirmation page |
+
+## Hero scroll animation
+- The landing page's clipper breakdown is code-driven (components/ScrollExplode.tsx) using the part images in public/clipper/. It needs no WebGL or video.

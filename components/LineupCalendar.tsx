@@ -1,19 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useDemo } from "@/lib/mock/DemoStore";
-
-// Shop hours by weekday (0=Sun … 6=Sat). Closed Sun/Mon.
-const DAY_HOURS: Record<number, { start: number; end: number } | null> = {
-  0: null,
-  1: null,
-  2: { start: 10.5, end: 18.5 },
-  3: { start: 10.5, end: 18.5 },
-  4: { start: 10.5, end: 18.5 },
-  5: { start: 10.5, end: 19.5 },
-  6: { start: 9.5, end: 15.5 },
-};
+import { fmtTime, isoDate } from "@/lib/mock/data";
+import { shopOpen, slotInPast, slotOpen, slotTimes } from "@/lib/availability";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = [
@@ -21,49 +13,40 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-function fmtHour(decimal: number) {
-  const h = Math.floor(decimal);
-  const m = decimal % 1 === 0.5 ? "30" : "00";
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h > 12 ? h - 12 : h;
-  return `${h12}:${m} ${ampm}`;
-}
-
-function sameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
 export default function LineupCalendar() {
-  const { openOverlay } = useDemo();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const { barbers, chairs, timeEntries, appointments, hydrated } = useDemo();
+  const ctx = useMemo(
+    () => ({ barbers, chairs, timeEntries, appointments }),
+    [barbers, chairs, timeEntries, appointments]
+  );
 
-  const [view, setView] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selected, setSelected] = useState(new Date(today));
+  const todayIso = isoDate();
+  const [view, setView] = useState(() => {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), 1);
+  });
+  const [selected, setSelected] = useState(todayIso);
 
   const year = view.getFullYear();
   const month = view.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const cells: (Date | null)[] = [];
+  const cells: (string | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  for (let d = 1; d <= daysInMonth; d++) cells.push(isoDate(new Date(year, month, d)));
 
-  const hoursRange = DAY_HOURS[selected.getDay()];
-  const slots: { time: string; booked: boolean }[] = [];
-  if (hoursRange) {
-    for (let t = hoursRange.start; t < hoursRange.end; t += 1) {
-      // deterministic mock availability
-      const booked = (selected.getDate() * Math.floor(t)) % 3 === 0;
-      slots.push({ time: fmtHour(t), booked });
-    }
-  }
+  const slots = slotTimes(selected).map((t) => ({
+    time: t,
+    open: hydrated && slotOpen(selected, t, ctx),
+    past: slotInPast(selected, t),
+  }));
 
   const changeMonth = (delta: number) => setView(new Date(year, month + delta, 1));
+  const selectedDate = new Date(`${selected}T12:00:00`);
 
   return (
-    <section id="live-lineup" className="relative z-20 bg-brand-charcoal py-24">
+    <section id="schedule" className="relative z-20 scroll-mt-24 bg-brand-charcoal py-24">
       <div className="mx-auto max-w-5xl px-6">
         <div className="mb-10">
           <p className="flex items-center gap-2 font-sans text-xs uppercase tracking-[0.3em] text-brand-gold/60">
@@ -73,13 +56,10 @@ export default function LineupCalendar() {
             </span>
             Schedule
           </p>
-          <h2 className="mt-2 font-display text-4xl tracking-widest text-brand-gold md:text-5xl">
-            Book a Time
-          </h2>
+          <h2 className="mt-2 font-display text-4xl tracking-widest text-brand-gold md:text-5xl">Book a Time</h2>
         </div>
 
         <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_300px]">
-          {/* calendar */}
           <div className="rounded-2xl border border-brand-gold/20 bg-brand-dark p-5">
             <div className="mb-4 flex items-center justify-between">
               <button onClick={() => changeMonth(-1)} aria-label="Previous month" className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/60 transition-colors hover:border-brand-gold hover:text-brand-gold">
@@ -100,17 +80,16 @@ export default function LineupCalendar() {
             </div>
 
             <div className="grid grid-cols-7 gap-1">
-              {cells.map((date, i) => {
-                if (!date) return <div key={i} />;
-                const past = date < today;
-                const closed = DAY_HOURS[date.getDay()] === null;
-                const isSelected = sameDay(date, selected);
-                const disabled = past || closed;
+              {cells.map((iso, i) => {
+                if (!iso) return <div key={i} />;
+                const disabled = iso < todayIso || !shopOpen(iso);
+                const isSelected = iso === selected;
                 return (
                   <button
-                    key={i}
+                    key={iso}
                     disabled={disabled}
-                    onClick={() => setSelected(date)}
+                    onClick={() => setSelected(iso)}
+                    aria-pressed={isSelected}
                     className={`aspect-square rounded-lg font-sans text-sm transition-colors ${
                       isSelected
                         ? "bg-brand-gold font-semibold text-black"
@@ -119,49 +98,52 @@ export default function LineupCalendar() {
                         : "text-white/70 hover:bg-brand-gold/15 hover:text-brand-gold"
                     }`}
                   >
-                    {date.getDate()}
+                    {Number(iso.slice(8))}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* hourly schedule */}
           <div className="rounded-2xl border border-brand-gold/20 bg-brand-dark p-5">
             <h3 className="mb-4 font-sans text-sm font-semibold uppercase tracking-wider text-brand-gold">
-              {selected.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+              {selectedDate.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
             </h3>
             {slots.length === 0 ? (
               <p className="py-8 text-center font-sans text-sm text-white/40">Closed this day.</p>
             ) : (
               <div className="flex flex-col divide-y divide-white/5">
-                {slots.map((s) => (
-                  <button
-                    key={s.time}
-                    disabled={s.booked}
-                    onClick={() => openOverlay({ type: "book" })}
-                    className={`flex items-center justify-between py-2.5 text-sm transition-colors ${
-                      s.booked ? "cursor-not-allowed text-white/25 line-through" : "text-white/80 hover:text-brand-gold"
-                    }`}
-                  >
-                    <span>{s.time}</span>
-                    <span className={`font-sans text-xs uppercase tracking-wider ${s.booked ? "text-brand-red/70" : "text-emerald-400"}`}>
-                      {s.booked ? "Booked" : "Open"}
-                    </span>
-                  </button>
-                ))}
+                {slots.map((s) =>
+                  s.open ? (
+                    <Link
+                      key={s.time}
+                      href={`/book?date=${selected}&time=${s.time}`}
+                      className="flex items-center justify-between py-2.5 text-sm text-white/80 transition-colors hover:text-brand-gold"
+                    >
+                      <span>{fmtTime(s.time)}</span>
+                      <span className="font-sans text-xs uppercase tracking-wider text-emerald-400">Open</span>
+                    </Link>
+                  ) : (
+                    <div key={s.time} className="flex items-center justify-between py-2.5 text-sm text-white/25 line-through">
+                      <span>{fmtTime(s.time)}</span>
+                      <span className="font-sans text-xs uppercase tracking-wider text-brand-red/70 no-underline">
+                        {s.past ? "Passed" : "Booked"}
+                      </span>
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
         </div>
 
         <div className="mt-10 text-center">
-          <button
-            onClick={() => openOverlay({ type: "book" })}
-            className="rounded-sm bg-brand-red px-10 py-4 font-display text-2xl tracking-widest text-white transition-all hover:scale-105 hover:bg-red-700"
+          <Link
+            href="/book"
+            className="inline-block rounded-sm bg-brand-red px-10 py-4 font-display text-2xl tracking-widest text-white transition-all hover:scale-105 hover:bg-red-700"
           >
-            Book This Time
-          </button>
+            Book a Cut
+          </Link>
         </div>
       </div>
     </section>

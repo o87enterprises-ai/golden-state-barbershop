@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, Stars, useGLTF } from '@react-three/drei';
 import { DepthOfField, EffectComposer } from '@react-three/postprocessing';
@@ -64,6 +64,27 @@ function Bridge({ rec }: { rec: Recorder }) {
   useEffect(() => {
     rec.onReady({ advance: (t) => advance(t), canvas: gl.domElement });
   }, [advance, gl, rec]);
+  return null;
+}
+
+// Watches the real frame rate. Slow -> drop to the light tier; still slow -> give up (video fallback).
+function FpsGuard({ tier, onLow }: { tier: number; onLow: () => void }) {
+  const acc = useRef({ t: 0, n: 0, done: false });
+  useEffect(() => {
+    acc.current = { t: 0, n: 0, done: false };
+  }, [tier]);
+  useFrame((_, dt) => {
+    const a = acc.current;
+    if (a.done || dt > 0.5) return; // ignore load hitches
+    a.t += dt;
+    if (a.t < 1.5) return; // warm-up
+    a.n += 1;
+    if (a.t >= 4.5) {
+      a.done = true;
+      const fps = a.n / (a.t - 1.5);
+      if (fps < (tier === 0 ? 30 : 22)) onLow();
+    }
+  });
   return null;
 }
 
@@ -162,10 +183,18 @@ function System({ motion, rec }: { motion: boolean; rec?: Recorder }) {
 }
 
 export default function SolarScene({ active, motion, onFail, recorder }: { active: boolean; motion: boolean; onFail?: () => void; recorder?: Recorder }) {
+  // tier 0 = full, tier 1 = light (no depth of field, 1x pixels, fewer stars)
+  const [tier, setTier] = useState(() => {
+    if (recorder || typeof navigator === 'undefined') return 0;
+    const weak = (navigator.hardwareConcurrency ?? 8) <= 4 || ((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) <= 4 || matchMedia('(pointer: coarse)').matches;
+    return weak ? 1 : 0;
+  });
+  const lowered = () => (tier === 0 ? setTier(1) : onFail?.());
+
   return (
     <div className="absolute inset-0 z-0">
       <Canvas
-        dpr={recorder ? 1 : [1, 1.75]}
+        dpr={recorder || tier > 0 ? 1 : [1, 1.5]}
         camera={{ position: [0, 0, 16], fov: 38, near: 0.1, far: 200 }}
         frameloop={recorder ? 'never' : active ? 'always' : 'never'}
         gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: !!recorder }}
@@ -190,14 +219,17 @@ export default function SolarScene({ active, motion, onFail, recorder }: { activ
             <Lightformer form="rect" intensity={3} position={[8, -2, -6]} scale={[10, 6, 1]} color="#facc15" />
             <Lightformer form="ring" intensity={2} position={[0, 8, -8]} scale={6} color="#ffffff" />
           </Environment>
-          <Stars radius={90} depth={60} count={2500} factor={5} saturation={0} fade speed={recorder ? 0 : 0.4} />
+          <Stars radius={90} depth={60} count={tier > 0 ? 900 : 2000} factor={5} saturation={0} fade speed={recorder ? 0 : 0.4} />
           <System motion={motion} rec={recorder} />
           {recorder && <Bridge rec={recorder} />}
+          {!recorder && <FpsGuard tier={tier} onLow={lowered} />}
         </Suspense>
 
-        <EffectComposer multisampling={0}>
-          <DepthOfField worldFocusDistance={16} worldFocusRange={9} bokehScale={3} height={480} />
-        </EffectComposer>
+        {(tier === 0 || recorder) && (
+          <EffectComposer multisampling={0}>
+            <DepthOfField worldFocusDistance={16} worldFocusRange={9} bokehScale={3} resolutionScale={recorder ? 1 : 0.5} />
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

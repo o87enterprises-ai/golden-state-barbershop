@@ -6,10 +6,17 @@ import { useInView, useReducedMotion } from 'framer-motion';
 
 const SolarScene = dynamic(() => import('./3d/SolarScene'), { ssr: false });
 
+// True only for GPU-accelerated WebGL. Software renderers (SwiftShader, llvmpipe,
+// Microsoft Basic Render Driver) technically work but crawl, so they get the video.
 function webglAvailable(): boolean {
   try {
     const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    const gl = (c.getContext('webgl2', { failIfMajorPerformanceCaveat: true }) ||
+      c.getContext('webgl', { failIfMajorPerformanceCaveat: true })) as WebGLRenderingContext | null;
+    if (!gl) return false;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return !/swiftshader|llvmpipe|software|basic render|warp|microsoft basic/i.test(name);
   } catch {
     return false;
   }

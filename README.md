@@ -62,5 +62,9 @@ The storefront, accounts, time clock, bookings, and POS currently run on a **cli
 | `NEXT_PUBLIC_PAYMENTS_LIVE=1` | Hides the "simulated payment" labels once a processor is connected |
 | `NEXT_PUBLIC_GOOGLE_REVIEW_URL` | Shows the review prompt on the confirmation page |
 
-## Hero scroll animation
-- The landing page's clipper breakdown is code-driven (components/ScrollExplode.tsx) using the part images in public/clipper/. It needs no WebGL or video.
+## Hero (3D + video fallback)
+- components/ClipperBreakdown.tsx renders a live 3D scene (components/3d/SolarScene.tsx) from public/models/*.glb: clippers (sun), brush (earth, 1/3), bottle (moon, 1/22 of the brush), with depth of field and pointer parallax.
+- Browsers without WebGL, and anyone who prefers reduced motion, get the pre-rendered loop public/media/hero-loop.mp4 (60s, seamless, ~4.9 MB).
+- To re-render the video after changing the scene: run 
+pm run dev, open /dev-record in Chrome or Edge, press Record, and save the downloaded file over public/media/hero-loop.mp4. (It steps the scene frame by frame and encodes H.264 in the browser; no ffmpeg needed.)
+- Models: the supplied salon_clippers.glb is a pair of scissors. Swap public/models/clippers.glb for a real clipper model any time.

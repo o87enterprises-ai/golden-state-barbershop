@@ -3,7 +3,6 @@
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useInView, useReducedMotion } from 'framer-motion';
-import ClipperOrbit2D from './ClipperOrbit2D';
 
 const SolarScene = dynamic(() => import('./3d/SolarScene'), { ssr: false });
 
@@ -16,7 +15,30 @@ function webglAvailable(): boolean {
   }
 }
 
-// If the 3D scene throws (bad model, lost context), swap to the 2D version.
+// Pre-rendered loop of the same scene, for browsers that can't run WebGL.
+function LoopVideo({ playing }: { playing: boolean }) {
+  const v = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const el = v.current;
+    if (!el) return;
+    if (playing) el.play().catch(() => {});
+    else el.pause();
+  }, [playing]);
+  return (
+    <video
+      ref={v}
+      src="/media/hero-loop.mp4"
+      muted
+      loop
+      playsInline
+      preload="auto"
+      aria-hidden="true"
+      className="absolute inset-0 z-0 h-full w-full object-cover object-[72%_center]"
+    />
+  );
+}
+
+// If the 3D scene throws (bad model, lost context), swap to the video.
 class Boundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
@@ -27,9 +49,9 @@ class Boundary extends Component<{ fallback: ReactNode; children: ReactNode }, {
   }
 }
 
-// Hero: headline on the left over a full-bleed 3D "spaceship window" — clippers
+// Hero: headline on the left over a full-bleed 3D "spaceship window" — scissors
 // as the sun, brush as the earth, bottle as the moon. Browsers without WebGL
-// get the 2D spin-and-orbit version instead.
+// (and anyone who prefers reduced motion) get the pre-rendered video loop.
 export default function ClipperBreakdown() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { amount: 0.1, initial: true });
@@ -39,7 +61,7 @@ export default function ClipperBreakdown() {
 
   useEffect(() => setGl(webglAvailable()), []);
 
-  if (gl === false || failed) return <ClipperOrbit2D />;
+  const video = <LoopVideo playing={inView && !reduced} />;
 
   return (
     <section
@@ -47,11 +69,12 @@ export default function ClipperBreakdown() {
       aria-label="Precision engineered"
       className="relative flex min-h-screen w-full items-start overflow-hidden bg-[#05060a] md:items-center"
     >
-      {gl && (
-        <Boundary fallback={<ClipperOrbit2D />}>
+      {gl === true && !failed && (
+        <Boundary fallback={video}>
           <SolarScene active={inView} motion={!reduced} onFail={() => setFailed(true)} />
         </Boundary>
       )}
+      {(gl === false || failed) && video}
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#05060a]/90 via-[#05060a]/35 to-transparent" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#05060a]/70 via-transparent to-[#05060a]/80" />

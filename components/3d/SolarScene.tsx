@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, Stars, useGLTF } from '@react-three/drei';
 import { DepthOfField, EffectComposer } from '@react-three/postprocessing';
@@ -51,7 +51,23 @@ function Model({ url, size }: { url: string; size: number }) {
   return <primitive object={obj} />;
 }
 
-function System({ motion }: { motion: boolean }) {
+// Offline recording: time is driven externally and every speed is a whole number of
+// laps per loop, so the captured video repeats seamlessly.
+export type Recorder = {
+  loop: number; // seconds
+  time: { current: number };
+  onReady: (api: { advance: (t: number) => void; canvas: HTMLCanvasElement }) => void;
+};
+
+function Bridge({ rec }: { rec: Recorder }) {
+  const { advance, gl } = useThree();
+  useEffect(() => {
+    rec.onReady({ advance: (t) => advance(t), canvas: gl.domElement });
+  }, [advance, gl, rec]);
+  return null;
+}
+
+function System({ motion, rec }: { motion: boolean; rec?: Recorder }) {
   const { viewport, camera, pointer } = useThree();
 
   const sun = useRef<THREE.Group>(null);
@@ -70,18 +86,19 @@ function System({ motion }: { motion: boolean }) {
   const aim = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((_, dt) => {
-    if (motion) t0.current += dt;
-    const t = t0.current;
+    if (motion && !rec) t0.current += dt;
+    const t = rec ? rec.time.current : t0.current;
+    const w = rec ? (Math.PI * 2) / rec.loop : 0; // radians/sec for one lap per loop
 
     // sun: slow turn about its flat axis, with a gentle wobble
     if (sun.current) {
-      sun.current.rotation.y = t * SUN_SPIN;
-      sun.current.rotation.z = Math.sin(t * 0.07) * 0.06;
+      sun.current.rotation.y = rec ? w * t : t * SUN_SPIN;
+      sun.current.rotation.z = rec ? Math.sin(w * t) * 0.06 : Math.sin(t * 0.07) * 0.06;
     }
 
     // earth: tilted elliptical orbit around the sun, passing close to the camera
     if (earthOrbit.current) {
-      const a = t * EARTH_SPEED + 0.5;
+      const a = (rec ? w : EARTH_SPEED) * t + 0.5;
       earthOrbit.current.position.set(
         Math.cos(a) * EARTH_RADIUS,
         Math.sin(a) * EARTH_RADIUS * 0.28,
@@ -89,13 +106,13 @@ function System({ motion }: { motion: boolean }) {
       );
     }
     if (earth.current) {
-      earth.current.rotation.y = t * 0.18;
-      earth.current.rotation.x = t * 0.07;
+      earth.current.rotation.y = rec ? w * t * 2 : t * 0.18;
+      earth.current.rotation.x = rec ? w * t : t * 0.07;
     }
 
     // moon: faster, differently tilted orbit around the earth
     if (moonOrbit.current) {
-      const a = t * MOON_SPEED;
+      const a = (rec ? w * 4 : MOON_SPEED) * t;
       moonOrbit.current.position.set(
         Math.cos(a) * MOON_RADIUS,
         Math.sin(a) * MOON_RADIUS * 0.6,
@@ -103,8 +120,8 @@ function System({ motion }: { motion: boolean }) {
       );
     }
     if (moon.current) {
-      moon.current.rotation.x = t * 0.9;
-      moon.current.rotation.z = t * 0.5;
+      moon.current.rotation.x = rec ? w * t * 9 : t * 0.9;
+      moon.current.rotation.z = rec ? w * t * 5 : t * 0.5;
     }
 
     // pointer parallax: nudge the camera, keep looking at the sun
@@ -144,14 +161,14 @@ function System({ motion }: { motion: boolean }) {
   );
 }
 
-export default function SolarScene({ active, motion, onFail }: { active: boolean; motion: boolean; onFail?: () => void }) {
+export default function SolarScene({ active, motion, onFail, recorder }: { active: boolean; motion: boolean; onFail?: () => void; recorder?: Recorder }) {
   return (
     <div className="absolute inset-0 z-0">
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={recorder ? 1 : [1, 1.75]}
         camera={{ position: [0, 0, 16], fov: 38, near: 0.1, far: 200 }}
-        frameloop={active ? 'always' : 'never'}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        frameloop={recorder ? 'never' : active ? 'always' : 'never'}
+        gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: !!recorder }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
@@ -173,8 +190,9 @@ export default function SolarScene({ active, motion, onFail }: { active: boolean
             <Lightformer form="rect" intensity={3} position={[8, -2, -6]} scale={[10, 6, 1]} color="#facc15" />
             <Lightformer form="ring" intensity={2} position={[0, 8, -8]} scale={6} color="#ffffff" />
           </Environment>
-          <Stars radius={90} depth={60} count={2500} factor={5} saturation={0} fade speed={0.4} />
-          <System motion={motion} />
+          <Stars radius={90} depth={60} count={2500} factor={5} saturation={0} fade speed={recorder ? 0 : 0.4} />
+          <System motion={motion} rec={recorder} />
+          {recorder && <Bridge rec={recorder} />}
         </Suspense>
 
         <EffectComposer multisampling={0}>

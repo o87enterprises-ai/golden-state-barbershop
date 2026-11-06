@@ -12,7 +12,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "typecheck": "tsc --noEmit",
     "db:seed": "node prisma/seed.mjs",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "launch": "node scripts/launch.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

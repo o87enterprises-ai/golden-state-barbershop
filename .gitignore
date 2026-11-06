@@ -15,3 +15,7 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.log
 .vercel
+
+LAUNCH-CREDENTIALS.txt
+.env.launch
+.env.local

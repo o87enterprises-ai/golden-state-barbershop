@@ -25,7 +25,7 @@ needs a native Tap-to-Pay wrapper — the backend here doesn't change.
 2. Copy `.env.example` → `.env`, fill keys.
    - Postgres: `vercel integration add neon` (or any Marketplace Postgres)
    - Stripe + Resend keys from their dashboards
-3. `npm run db:push` then seed Services/Barbers (Prisma Studio: `npm run db:studio`)
+3. `npm run db:migrate` (production / shared DBs; applies `prisma/migrations`) or `npm run db:push` (throwaway local DB), then `npm run db:seed`. Change the schema with `npm run db:migrate:dev`. This seeds the menu services and the staff logins (owner Andy + barbers Ever, Andru, Julio Cesar, Marvin). Set `SEED_STAFF_PASSWORD` to choose their password, or capture the random ones it prints once.
 4. Stripe webhook → `https://<site>/api/stripe/webhook` (event: `checkout.session.completed`)
 5. `npm run dev`
 
@@ -42,16 +42,19 @@ needs a native Tap-to-Pay wrapper — the backend here doesn't change.
 | Customer app | `/portal/*` | customers |
 | Staff app | `/admin/*` | owner (all pages) and barbers (Time Clock, Incognito, Schedule, POS, Queue, Chairs) |
 
-- **Accounts:** the first owner is created at `/signup?role=admin` (only possible until an owner exists). The owner invites barbers with one-time codes (Team page); customers sign up freely. Passwords are salted PBKDF2-SHA256 hashes.
+- **Accounts:** the first owner is created at `/signup?role=admin` (only possible until an owner exists). The owner invites barbers with one-time codes (Team page); customers sign up freely. Passwords are salted scrypt hashes.
 - **Time clock:** barbers clock in and claim a chair. Public availability (the landing "The Floor", the booking calendar, barber choices) follows who is clocked in at a public chair.
 - **Incognito (ghost chair):** a barber can reserve their chair for private/VIP clients. It shows publicly as "Reserved" with no names, and the barber sets a custom price per private session. Sales roll up to the owner's Revenue page.
 - **Shop:** affiliate links to Amazon (`lib/mock/data.ts` → `products`). No prices are stored because Amazon requires live prices. Set `NEXT_PUBLIC_AMAZON_TAG` to your Associates ID.
 
 ## Production notes — read before launch
-The storefront, accounts, time clock, bookings, and POS currently run on a **client-side data layer** (`lib/auth/AuthStore.tsx`, `lib/mock/DemoStore.tsx`) persisted in the browser. That means:
-- Accounts and shop data live **per device**: a booking made on a customer's phone will not appear on the shop's computer. Browser storage is also **not a security boundary**; the route gates (`RequireRole`) are a UX layer, not server enforcement.
-- Card payments are **simulated** (`NEXT_PUBLIC_PAYMENTS_LIVE` unset). No charge is made.
-- Before taking real customers, move these to the server: users + sessions (cookie auth), chairs / time entries / private sessions / sales (Prisma + Postgres), and wire the booking flow to `app/api/checkout` and the Stripe webhook that already exist. The store functions (`signup`, `login`, `clockIn`, `addAppointment`, …) are the seam: swap their bodies for `fetch` calls and the pages don't change.
+**Accounts are server-side.** Users, scrypt password hashes, invites, and httpOnly cookie sessions live in Postgres (`app/api/auth/*`, `lib/auth/server.ts`). Every account mutation is authorized on the server; `RequireRole` is only a UX gate. Seeded logins: `andy@` (owner), `ever@`, `andru@`, `julio@`, `marvin@` at `goldenstatebarbershop.com`.
+
+**Shop data is still per device.** Chairs, time clock, private sessions, sales, queue, messages, and style profiles live in `localStorage` (`lib/mock/DemoStore.tsx`), so a booking made on a customer's phone will not appear on the shop's computer.
+
+Card payments in the UI are still **simulated** (`NEXT_PUBLIC_PAYMENTS_LIVE` unset). No charge is made.
+
+Before taking real customers: move chairs / time entries / private sessions / sales / queue / messages to Prisma + Postgres, and wire the booking flow to `app/api/checkout` and the Stripe webhook. The store functions (`clockIn`, `addAppointment`, …) are the seam: swap their bodies for `fetch` calls and the pages don't change.
 
 ## Environment flags
 | Variable | Purpose |

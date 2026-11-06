@@ -8,6 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "typecheck": "tsc --noEmit",
+    "db:seed": "node prisma/seed.mjs",
     "db:studio": "prisma studio"
   },
   "dependencies": {
@@ -33,6 +37,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
+    "@vercel/config": "^0.14.1",
     "autoprefixer": "^10.6.1",
     "mp4-muxer": "^5.2.2",
     "postcss": "^8.5.31",

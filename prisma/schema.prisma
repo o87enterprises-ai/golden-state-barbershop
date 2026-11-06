@@ -67,3 +67,52 @@ enum BookingStatus {
   CANCELLED
   NO_SHOW
 }
+
+// ---- Accounts ---------------------------------------------------------------
+// Passwords are scrypt hashes (lib/auth/password.ts). Sessions are random
+// tokens in an httpOnly cookie; only the SHA-256 of the token is stored here.
+
+enum Role {
+  CUSTOMER
+  BARBER
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  role         Role      @default(CUSTOMER)
+  onboarded    Boolean   @default(false)
+  cutsHair     Boolean   @default(false)
+  // Barber profile
+  specialties  String?
+  bio          String?
+  privateRate  Float?
+  passwordHash String
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// One-time barber invite codes created by the owner.
+model Invite {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  usedBy    String? // email that redeemed it
+  createdAt DateTime @default(now())
+}

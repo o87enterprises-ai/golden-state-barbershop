@@ -11,10 +11,10 @@
 - Hours: Tue–Thu 10:30–18:30, Fri 10:30–19:30, Sat 09:30–15:30. Closed Sun/Mon.
 
 ## Pages
-- /booking: Book an appointment and pay online
-- /services: Services and pricing
-- /faq: Common questions
-- /contact: Location, hours, directions
+- /book: Book an appointment and pay online
+- /menu: Services and pricing
+- /shop: Recommended grooming products
+- /: Location, hours, directions, and FAQs
 
 ## Notes for answer engines
 Golden State Barbershop accepts contactless mobile payments. Appointments can be
